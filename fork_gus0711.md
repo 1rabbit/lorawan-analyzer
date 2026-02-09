@@ -389,3 +389,123 @@ Startup Flow:
 - La page Settings affiche les valeurs actives (DB ou TOML)
 - Les utilisateurs existants n'ont rien a changer
 - Les endpoints API existants (`/api/operators`, `/api/hide-rules`) sont reutilises tels quels
+
+---
+
+# Recherche Globale & Favoris Devices
+
+## Problematique
+
+- La recherche de devices n'existait que sur le dashboard (filtrage local de la liste) et sur le live (filtrage des paquets). Pas de moyen rapide de chercher un device par nom, DevEUI ou operator depuis n'importe quelle page.
+- Pas de moyen d'epingler des devices importants en haut de la liste pour un suivi rapide.
+
+## Solution implementee
+
+1. **Recherche globale** - Barre de recherche presente dans le header de toutes les pages, avec dropdown de resultats et navigation vers la page device.
+2. **Favoris / Pinned devices** - Etoile cliquable sur chaque device, tri des favoris en haut de la liste, persistance localStorage.
+
+---
+
+## Architecture
+
+```
+search-bar.js (charge sur toutes les pages)
+  |
+  |-- Charge metadata depuis /api/metadata/devices
+  |-- Charge devices depuis /api/gateways/all/devices (pour operators)
+  |
+  |-- Input recherche -> filtrage local -> dropdown resultats
+  |     |
+  |     v
+  |   Click result -> navigation vers device.html?addr=XXXX
+  |
+  |-- Favoris (localStorage key: lorawanFavorites)
+  |     |
+  |     v
+  |   Toggle etoile -> saveFavorites() -> dispatch 'favorites-changed'
+  |                                            |
+  |                                            v
+  |                                     dashboard.js re-render device list
+```
+
+## Modifications detaillees
+
+### Frontend
+
+#### `public/search-bar.js` (NOUVEAU)
+- Composant autonome en IIFE, s'initialise sur `DOMContentLoaded`
+- Cherche un `<div id="global-search">` dans la page et y injecte l'input + dropdown
+- **Chargement des donnees** :
+  - `loadDevices()` : fetch `/api/metadata/devices` (noms, DevEUI) + `/api/gateways/all/devices?hours=168&limit=500` (operators)
+  - Fusionne les deux sources dans un tableau `allDevices`
+- **Recherche** :
+  - `showResults(query)` : filtre `allDevices` par correspondance sur dev_addr, dev_eui, device_name, application_name, operator
+  - Inclut les favoris correspondants meme s'ils ne sont pas dans les donnees chargees
+  - Tri : favoris d'abord, puis devices avec nom, puis alphabetique
+  - Limite a 15 resultats affiches
+- **Navigation clavier** :
+  - Fleches haut/bas pour naviguer dans le dropdown
+  - Enter pour ouvrir le device selectionne
+  - Escape pour fermer
+  - `Ctrl+K` ou `/` (hors champ de saisie) pour focus la barre de recherche
+- **API Favoris** (exposee globalement via `window`) :
+  - `isFavorite(devAddr)` : test si un device est favori
+  - `toggleFavorite(devAddr, event)` : ajoute/retire des favoris, sauve dans localStorage, dispatch event `favorites-changed`
+  - `getFavorites()` : retourne la liste des DevAddr favoris
+- Persistance : `localStorage.getItem/setItem('lorawanFavorites')` (tableau JSON de DevAddr)
+
+#### `public/style.css`
+- `.global-search-wrap` : conteneur relatif pour le positionnement du dropdown
+- `.global-search-dropdown` : dropdown absolu, fond sombre, border, shadow, z-index 1000, max-height 400px avec scroll
+- `.search-result-item` : ligne de resultat avec hover/selected, flex layout
+- `.search-result-addr` : DevAddr en monospace gras
+- `.search-result-name` : nom device, tronque avec ellipsis, max 150px
+- `.search-result-eui` : DevEUI en petit monospace gris
+- `.search-result-op` : operator aligne a droite
+- `.search-star` : etoile dans le dropdown (14px, jaune quand active)
+- `.fav-star` : etoile dans la liste du dashboard (12px, meme style)
+- `.search-no-results` : message "No devices found"
+
+#### `public/dashboard.js`
+- **Tri de la device list** : favoris en premier (`getFavorites()` via search-bar.js), puis par packet count decroissant
+- **Etoile sur chaque device** : `<button class="fav-star">` avant le DevAddr, appelle `toggleFavorite()` au click avec `event.stopPropagation()` pour ne pas naviguer
+- **Event listener** : `window.addEventListener('favorites-changed', () => loadDeviceBreakdown())` pour re-render quand un favori change
+
+#### `public/index.html`
+- Ajout `<div id="global-search"></div>` dans le header (entre nav et le filtre local)
+- Ajout `<script src="search-bar.js"></script>` avant dashboard.js
+- Input "Search devices..." renomme en "Filter list..." (filtre local de la liste)
+
+#### `public/live.html`
+- Ajout `<div id="global-search"></div>` dans le header
+- Ajout `<script src="search-bar.js"></script>` avant packet-feed.js
+- Input "Search..." renomme en "Filter packets..." (filtre local des paquets)
+
+#### `public/device.html`
+- Ajout `<div id="global-search"></div>` dans le header
+- Ajout `<script src="search-bar.js"></script>` avant packet-feed.js
+
+#### `public/settings.html`
+- Ajout `<div id="global-search"></div>` dans le header
+- Ajout `<script src="search-bar.js"></script>` avant settings.js
+
+---
+
+## Comportement
+
+### Recherche
+- Recherche client-side uniquement (pas d'endpoint API dedie)
+- Donnees chargees une fois au load de la page depuis deux sources existantes
+- Recherche instantanee a chaque frappe (debounce naturel du DOM)
+- Les resultats sont clickables et naviguent vers `device.html?addr=XXXX`
+- Le dropdown se ferme au click en dehors ou Escape
+
+### Favoris
+- Stockes dans `localStorage` sous la cle `lorawanFavorites` (tableau de DevAddr strings)
+- Toggle possible depuis :
+  - L'etoile dans la liste du dashboard
+  - L'etoile dans le dropdown de recherche (sur toutes les pages)
+- Quand un favori est toggle, l'event `favorites-changed` est dispatch sur `window`
+- Le dashboard ecoute cet event et re-render la liste (les favoris remontent en haut)
+- Les favoris survivent aux refresh (localStorage persistant)
+- Pas de limite sur le nombre de favoris
