@@ -21,11 +21,13 @@
             <a href="settings.html" class="nav-link px-3 py-1 rounded text-sm">Settings</a>
           </nav>
           <div class="border-l border-white/20 h-4"></div>
+          <div id="global-search"></div>
+          <div class="border-l border-white/20 h-4"></div>
           <div class="flex items-center gap-2 text-xs text-white/60">
             <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
             <span id="packet-count">0</span> packets
           </div>
-          <input type="text" id="search-input" placeholder="Search..." class="bg-white/10 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/40 w-32 focus:outline-none focus:border-white/40">
+          <input type="text" id="search-input" placeholder="Filter packets..." class="bg-white/10 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/40 w-32 focus:outline-none focus:border-white/40">
           <div class="flex items-center gap-1 text-xs text-white/60">
             <span>RSSI</span>
             <div class="rssi-range-wrap">
@@ -65,6 +67,7 @@
     <div id="live-feed-container" class="flex flex-col flex-1 min-h-0"></div>
   </div>
 
+  <script src="search-bar.js"></script>
   <script src="packet-feed.js"></script>
   <script src="live.js"></script>
 </body>

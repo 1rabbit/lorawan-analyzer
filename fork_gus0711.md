@@ -210,3 +210,182 @@ L'analyzer fonctionne normalement sans ces options. Les metadata sont un enrichi
 - Cache in-memory : lookup O(1) par DevAddr ou DevEUI
 - Pas d'impact sur le pipeline de paquets existant (enrichissement cote API, pas cote ingestion)
 - Les messages application sont en volume inferieur aux messages gateway (dedupliques par le network server)
+
+---
+
+# Page Settings - Configuration Zero-Config via Web UI
+
+## Problematique
+
+Toute la configuration (broker MQTT, topics, API ChirpStack, operateurs, hide rules) se faisait uniquement en editant `config.toml` manuellement. Pour un nouvel utilisateur, cela signifiait :
+- Copier `config.toml.example` en `config.toml`
+- Editer le fichier avec les bons parametres
+- Redemarrer le container
+
+L'objectif est un setup "zero-config" : installer, ouvrir le navigateur, configurer depuis la page Settings, et commencer a analyser.
+
+## Solution implementee
+
+Page Settings web accessible depuis la navigation, avec :
+- Configuration MQTT (broker, topic, auth, format) avec hot-reconnect
+- Configuration ChirpStack API (optionnelle) avec demarrage/arret a chaud
+- Gestion des operateurs custom (CRUD via API existante)
+- Gestion des hide rules (CRUD via API existante)
+- Indicateur de statut MQTT en temps reel
+- Persistance des settings dans ClickHouse (priorite sur config.toml)
+- Demarrage gracieux sans config MQTT (attente de configuration via Settings)
+
+---
+
+## Architecture
+
+```
+Settings Page (Web UI)
+  |
+  |-- PUT /api/settings/mqtt          -> setSetting('mqtt', JSON) -> onMqttChanged callback
+  |                                         |
+  |                                         v
+  |                                    disconnectMqtt() + connectMqtt(newConfig)
+  |
+  |-- PUT /api/settings/chirpstack-api -> setSetting('chirpstack_api', JSON) -> onChirpStackApiChanged
+  |                                         |
+  |                                         v
+  |                                    GatewaySync.stop() + new GatewaySync().start()
+  |
+  |-- GET /api/settings               -> getAllSettings() from ClickHouse
+  |-- GET /api/settings/status         -> getMqttStatus() (connected/server)
+
+Startup Flow:
+  loadConfig(TOML) -> initClickHouse -> migrations -> loadSettingsFromDb()
+    -> mergeConfigWithDbSettings(TOML, DB)  [DB overrides TOML]
+    -> if mqtt.server: connectMqtt()
+    -> else: "MQTT not configured, waiting for Settings page"
+    -> startApi(callbacks)
+```
+
+## Modifications detaillees
+
+### Backend
+
+#### `src/db/migrations.ts`
+- Nouvelle table `settings` :
+  ```sql
+  CREATE TABLE IF NOT EXISTS settings (
+    key String,
+    value String,
+    updated_at DateTime64(3)
+  ) ENGINE = ReplacingMergeTree(updated_at) ORDER BY key
+  ```
+- ReplacingMergeTree avec `updated_at` comme version : les INSERT successifs sur la meme `key` ecrasent la valeur precedente
+
+#### `src/db/queries.ts`
+- `getSetting(key)` : SELECT value FROM settings FINAL WHERE key = {key}
+- `setSetting(key, value)` : INSERT INTO settings avec timestamp courant
+- `getAllSettings()` : SELECT key, value FROM settings FINAL -> Record<string, string>
+
+#### `src/config.ts`
+- `DEFAULT_CONFIG` exporte (etait `const` interne, devient `export const`)
+- `mqtt.server` default change de `'tcp://localhost:1883'` a `''` (vide = pas configure)
+- `applyEnvOverrides(config)` : surcharge via variables d'environnement :
+  - `CLICKHOUSE_URL` -> `config.clickhouse.url`
+  - `CLICKHOUSE_DATABASE` -> `config.clickhouse.database`
+  - `API_BIND` -> `config.api.bind`
+- `loadSettingsFromDb()` : lit les cles `mqtt` et `chirpstack_api` depuis la table settings, parse le JSON
+- `mergeConfigWithDbSettings(config, dbSettings)` : fusionne DB > TOML > defaults
+
+#### `src/mqtt/consumer.ts`
+- Variable `currentServer` stockee a chaque `connectMqtt()`, effacee a chaque `disconnectMqtt()`
+- `getMqttStatus()` exporte : retourne `{ connected: boolean, server: string | null }`
+
+#### `src/api/settings.ts` (NOUVEAU)
+- Interface `SettingsCallbacks` : `onMqttChanged(MqttConfig)`, `onChirpStackApiChanged(ChirpStackApiConfig | null)`
+- `settingsRoutes(callbacks)` : factory de plugin Fastify, 5 routes :
+  - `GET /api/settings` : retourne settings actuels (mqtt, chirpstack_api, mqtt_status)
+  - `GET /api/settings/status` : retourne uniquement le statut MQTT
+  - `PUT /api/settings/mqtt` : valide body, sauve en DB, appelle `onMqttChanged` (disconnect + reconnect)
+  - `PUT /api/settings/chirpstack-api` : valide body, sauve en DB, appelle `onChirpStackApiChanged` (restart sync)
+  - `DELETE /api/settings/chirpstack-api` : efface la config, appelle `onChirpStackApiChanged(null)` (stop sync)
+
+#### `src/api/index.ts`
+- Import et branchement de `settingsRoutes` avec callbacks
+- Signature `startApi()` etendue avec parametre optionnel `callbacks: SettingsCallbacks`
+
+#### `src/index.ts`
+- Nouveau flux de demarrage :
+  1. `loadConfig(TOML)` -> config de base
+  2. `initClickHouse()` -> toujours avec TOML/defaults/env
+  3. `runMigrations()` -> cree la table settings si absente
+  4. `loadSettingsFromDb()` -> lit les settings persistees
+  5. `mergeConfigWithDbSettings()` -> DB overrides TOML
+  6. Si `mqtt.server` non vide : `connectMqtt()` ; sinon log "waiting for Settings"
+  7. `startApi()` avec callbacks de reconnexion
+- Callback `onMqttChanged` : `disconnectMqtt()` + `connectMqtt(newConfig)` si server non vide
+- Callback `onChirpStackApiChanged` : `GatewaySync.stop()` + new `GatewaySync().start()` si config fournie, sinon stop uniquement
+- Les handlers `onPacket` et `onDeviceMetadata` sont enregistres **avant** le connect MQTT, donc persistent a travers les reconnexions
+
+#### `docker-compose.yml`
+- Suppression du volume `./config.toml:/app/config.toml:ro` (plus obligatoire)
+- Suppression de `CONFIG_PATH` en variable d'environnement
+- Ajout des variables d'environnement :
+  - `CLICKHOUSE_URL: http://clickhouse:8123`
+  - `API_BIND: "0.0.0.0:3000"`
+
+### Frontend
+
+#### `public/settings.html` (NOUVEAU)
+- Page complete avec header et navigation coherents avec le reste du dashboard
+- 4 sections :
+  1. **MQTT Broker** : champs server, topic, username, password, format (select), application_topic + indicateur de statut (dot vert/rouge/jaune) + bouton "Save & Connect"
+  2. **ChirpStack API** : champs url, api_key + boutons "Save" et "Disable"
+  3. **Custom Operators** : liste des operateurs existants + formulaire ajout (prefix, name, priority) + bouton delete par ligne
+  4. **Hide Rules** : liste des regles existantes + formulaire ajout (type select, prefix, description) + bouton delete par ligne
+
+#### `public/settings.js` (NOUVEAU)
+- IIFE pour eviter la pollution du scope global
+- Helper `api(path, options)` : wrapper fetch avec gestion d'erreur JSON
+- **MQTT** :
+  - `loadSettings()` : GET /api/settings, peuple tous les champs du formulaire
+  - `updateMqttStatus(status)` : met a jour le dot (vert=connecte, jaune=en cours, gris=pas configure) et le texte
+  - `refreshStatus()` : GET /api/settings/status, appele toutes les 5s par setInterval
+  - Bouton "Save & Connect" : PUT /api/settings/mqtt, affiche feedback, refresh status apres 2s et 5s
+- **ChirpStack API** :
+  - Bouton "Save" : PUT /api/settings/chirpstack-api
+  - Bouton "Disable" : DELETE /api/settings/chirpstack-api, vide les champs
+- **Operators** :
+  - `loadOperators()` : GET /api/operators, rendu HTML de la liste avec boutons delete
+  - `deleteOperator(id)` : DELETE /api/operators/:id, reload
+  - Bouton "Add" : POST /api/operators, vide les champs, reload
+- **Hide Rules** :
+  - `loadHideRules()` : GET /api/hide-rules, rendu HTML
+  - `deleteHideRule(id)` : DELETE /api/hide-rules/:id, reload
+  - Bouton "Add" : POST /api/hide-rules, vide les champs, reload
+- Helper `esc(str)` : echappement HTML via textContent/innerHTML
+- Auto-refresh du statut MQTT toutes les 5 secondes
+
+#### `public/index.html`
+- Ajout lien navigation : `<a href="settings.html" class="nav-link">Settings</a>`
+
+#### `public/live.html`
+- Ajout lien navigation : `<a href="settings.html" class="nav-link">Settings</a>`
+
+#### `public/device.html`
+- Ajout lien navigation : `<a href="settings.html" class="nav-link">Settings</a>`
+
+---
+
+## Flux utilisateur zero-config
+
+1. `docker compose up -d` (pas besoin de config.toml)
+2. Ouvrir `http://localhost:15337` -> dashboard vide
+3. Cliquer sur "Settings" dans la navigation
+4. Remplir le broker MQTT : `tcp://host.docker.internal:1883`, topic `eu868/gateway/+/event/up`
+5. Cliquer "Save & Connect" -> indicateur passe au vert, les paquets commencent a arriver
+6. Optionnel : configurer ChirpStack API pour les noms de gateways
+7. Optionnel : ajouter des operateurs custom et des hide rules
+
+## Compatibilite ascendante
+
+- Si `config.toml` existe : l'app le charge normalement, les settings DB **ont priorite** sur le TOML
+- La page Settings affiche les valeurs actives (DB ou TOML)
+- Les utilisateurs existants n'ont rien a changer
+- Les endpoints API existants (`/api/operators`, `/api/hide-rules`) sont reutilises tels quels

@@ -23,7 +23,9 @@
             <a href="settings.html" class="nav-link px-3 py-1 rounded text-sm">Settings</a>
           </nav>
           <div class="border-l border-white/20 h-4"></div>
-          <input type="text" id="device-search" placeholder="Search devices..." class="bg-white/10 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/40 w-40 focus:outline-none focus:border-white/40">
+          <div id="global-search"></div>
+          <div class="border-l border-white/20 h-4"></div>
+          <input type="text" id="device-search" placeholder="Filter list..." class="bg-white/10 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/40 w-32 focus:outline-none focus:border-white/40">
           <div class="flex items-center gap-1 text-xs text-white/60">
             <span>RSSI</span>
             <div class="rssi-range-wrap">
@@ -176,6 +178,7 @@
     </div>
   </div>
 
+  <script src="search-bar.js"></script>
   <script src="dashboard.js"></script>
 </body>
 </html>

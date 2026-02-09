@@ -185,6 +185,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     selectGateway(null);
   });
 
+  // Re-render device list when favorites change
+  window.addEventListener('favorites-changed', () => loadDeviceBreakdown());
+
   // Auto-refresh every 30 seconds
   setInterval(loadAllData, 30000);
 });
@@ -594,10 +597,17 @@ async function loadDeviceBreakdown() {
     if (devices.length === 0) {
       deviceListContainer.innerHTML = '<div class="text-gray-500 text-sm text-center py-4">No devices</div>';
     } else {
-      // Sort by packet count descending
-      const sortedDevices = [...devices].sort((a, b) => b.packet_count - a.packet_count);
+      // Sort: favorites first, then by packet count descending
+      const favs = typeof getFavorites === 'function' ? getFavorites() : [];
+      const sortedDevices = [...devices].sort((a, b) => {
+        const aFav = favs.includes(a.dev_addr) ? 0 : 1;
+        const bFav = favs.includes(b.dev_addr) ? 0 : 1;
+        if (aFav !== bFav) return aFav - bFav;
+        return b.packet_count - a.packet_count;
+      });
       deviceListContainer.innerHTML = sortedDevices.map(d => {
         const isOwned = isMyDevice(d.dev_addr);
+        const isFav = favs.includes(d.dev_addr);
         const opColor = getOperatorColor(d.operator);
         const avgRssiClass = d.avg_rssi > -100 ? 'good' : d.avg_rssi > -115 ? 'medium' : 'bad';
         const avgSnrClass = d.avg_snr > 5 ? 'good' : d.avg_snr > 0 ? 'medium' : 'bad';
@@ -609,6 +619,7 @@ async function loadDeviceBreakdown() {
         return `
           <div class="device-detail-item ${isOwned ? 'mine' : ''}" onclick="window.location.href='device.html?addr=${d.dev_addr}'">
             <div class="device-detail-main">
+              <button class="fav-star ${isFav ? 'active' : ''}" onclick="toggleFavorite('${d.dev_addr}', event)" title="Toggle favorite">&#9733;</button>
               <span class="device-addr ${isOwned ? 'text-blue-400' : ''}">${d.dev_addr}</span>
               ${(() => { const meta = deviceMetadataMap[d.dev_addr]; const name = d.device_name || meta?.device_name; const eui = meta?.dev_eui; return (name || eui) ? `<span class="text-xs text-white/50 truncate max-w-[200px]" title="${[name, eui].filter(Boolean).join(' | ')}">${name ? name : ''}${name && eui ? ' ' : ''}${eui ? '<span class="font-mono text-white/30">' + eui + '</span>' : ''}</span>` : ''; })()}
               <span class="device-operator" style="color: ${opColor}">${d.operator || '?'}</span>
