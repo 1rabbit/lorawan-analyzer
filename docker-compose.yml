@@ -26,10 +26,10 @@ services:
     ports:
       - "15337:3000"
     volumes:
-      - ./config.toml:/app/config.toml:ro
       - ./public:/app/public:ro
     environment:
-      CONFIG_PATH: /app/config.toml
+      CLICKHOUSE_URL: http://clickhouse:8123
+      API_BIND: "0.0.0.0:3000"
     depends_on:
       clickhouse:
         condition: service_healthy

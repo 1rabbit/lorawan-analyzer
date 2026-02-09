@@ -22,16 +22,29 @@ export const DEFAULT_CONFIG: Config = {
   hide_rules: [],
 };
 
+function applyEnvOverrides(config: Config): Config {
+  if (process.env.CLICKHOUSE_URL) {
+    config.clickhouse.url = process.env.CLICKHOUSE_URL;
+  }
+  if (process.env.CLICKHOUSE_DATABASE) {
+    config.clickhouse.database = process.env.CLICKHOUSE_DATABASE;
+  }
+  if (process.env.API_BIND) {
+    config.api.bind = process.env.API_BIND;
+  }
+  return config;
+}
+
 export function loadConfig(configPath: string): Config {
   if (!existsSync(configPath)) {
     console.warn(`Config file not found at ${configPath}, using defaults`);
-    return { ...DEFAULT_CONFIG };
+    return applyEnvOverrides({ ...DEFAULT_CONFIG });
   }
 
   const content = readFileSync(configPath, 'utf-8');
   const parsed = toml.parse(content) as Partial<Config>;
 
-  return {
+  const config: Config = {
     mqtt: { ...DEFAULT_CONFIG.mqtt, ...parsed.mqtt },
     clickhouse: { ...DEFAULT_CONFIG.clickhouse, ...parsed.clickhouse },
     api: { ...DEFAULT_CONFIG.api, ...parsed.api },
@@ -39,6 +52,8 @@ export function loadConfig(configPath: string): Config {
     hide_rules: parsed.hide_rules ?? [],
     chirpstack_api: (parsed as any).chirpstack_api ?? undefined,
   };
+
+  return applyEnvOverrides(config);
 }
 
 export async function loadSettingsFromDb(): Promise<{ mqtt?: MqttConfig; chirpstack_api?: ChirpStackApiConfig }> {
