@@ -1,0 +1,27 @@
+{
+  "name": "lorawan-analyzer",
+  "version": "1.0.0",
+  "description": "LoRaWAN traffic analyzer with ChirpStack MQTT integration",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --format=esm --external:@clickhouse/client --external:mqtt --external:@fastify/websocket --external:@fastify/static --external:fastify --external:toml --external:@chirpstack/chirpstack-api",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "@chirpstack/chirpstack-api": "^4.0.0",
+    "@clickhouse/client": "^1.0.0",
+    "@fastify/static": "^7.0.0",
+    "@fastify/websocket": "^10.0.0",
+    "fastify": "^4.26.0",
+    "mqtt": "^5.3.0",
+    "toml": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "esbuild": "^0.20.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}

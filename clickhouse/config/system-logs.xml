@@ -1,0 +1,58 @@
+<clickhouse>
+    <text_log>
+        <database>system</database>
+        <table>text_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <partition_by>toYYYYMMDD(event_date)</partition_by>
+        <order_by>(event_time)</order_by>
+        <ttl>event_date + INTERVAL 1 HOUR</ttl>
+    </text_log>
+    <trace_log>
+        <database>system</database>
+        <table>trace_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <partition_by>toYYYYMMDD(event_date)</partition_by>
+        <order_by>(event_time)</order_by>
+        <ttl>event_date + INTERVAL 1 HOUR</ttl>
+    </trace_log>
+    <query_log>
+        <database>system</database>
+        <table>query_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <partition_by>toYYYYMMDD(event_date)</partition_by>
+        <order_by>(event_time)</order_by>
+        <ttl>event_date + INTERVAL 1 HOUR</ttl>
+    </query_log>
+    <part_log>
+        <database>system</database>
+        <table>part_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <partition_by>toYYYYMMDD(event_date)</partition_by>
+        <order_by>(event_time)</order_by>
+        <ttl>event_date + INTERVAL 1 HOUR</ttl>
+    </part_log>
+    <metric_log>
+        <database>system</database>
+        <table>metric_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <partition_by>toYYYYMMDD(event_date)</partition_by>
+        <order_by>(event_time)</order_by>
+        <ttl>event_date + INTERVAL 1 HOUR</ttl>
+    </metric_log>
+    <asynchronous_metric_log>
+        <database>system</database>
+        <table>asynchronous_metric_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <partition_by>toYYYYMMDD(event_date)</partition_by>
+        <order_by>(event_time)</order_by>
+        <ttl>event_date + INTERVAL 1 HOUR</ttl>
+    </asynchronous_metric_log>
+    <processors_profile_log remove="1" />
+    <opentelemetry_span_log remove="1" />
+    <crash_log remove="1" />
+    <session_log remove="1" />
+    <backup_log remove="1" />
+    <blob_storage_log remove="1" />
+    <s3_queue_log remove="1" />
+    <azure_queue_log remove="1" />
+</clickhouse>

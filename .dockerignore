@@ -1,0 +1,7 @@
+node_modules
+dist
+clickhouse/data
+mosquitto/data
+mosquitto/log
+*.log
+.git

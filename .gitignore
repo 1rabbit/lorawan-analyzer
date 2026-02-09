@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Data directories (Docker volumes)
+clickhouse/data/
+mosquitto/data/
+mosquitto/log/
+
+# Runtime configuration (contains credentials)
+config.toml
+
+# Environment and secrets
+.env
+*.pem
+*.key
+
+# IDE and tools
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

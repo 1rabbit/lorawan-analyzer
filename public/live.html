@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Stream - LoRaWAN Analyzer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="text-gray-100 min-h-screen">
+  <div class="flex flex-col h-screen">
+    <!-- Header -->
+    <header class="bg-white/5 border-b border-white/10 px-6 py-2 flex-shrink-0">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-6">
+          <h1 class="text-base font-bold text-white">LoRaWAN Analyzer</h1>
+          <!-- Navigation -->
+          <nav class="flex gap-1">
+            <a href="index.html" class="nav-link px-3 py-1 rounded text-sm">Dashboard</a>
+            <a href="live.html" class="nav-link active px-3 py-1 rounded text-sm">Live Stream</a>
+          </nav>
+          <div class="border-l border-white/20 h-4"></div>
+          <div class="flex items-center gap-2 text-xs text-white/60">
+            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <span id="packet-count">0</span> packets
+          </div>
+          <input type="text" id="search-input" placeholder="Search..." class="bg-white/10 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/40 w-32 focus:outline-none focus:border-white/40">
+          <div class="flex items-center gap-1 text-xs text-white/60">
+            <span>RSSI</span>
+            <div class="rssi-range-wrap">
+              <input type="range" id="rssi-min" min="-140" max="-30" value="-140" class="rssi-range rssi-range-min">
+              <input type="range" id="rssi-max" min="-140" max="-30" value="-30" class="rssi-range rssi-range-max">
+            </div>
+            <span id="rssi-range-label" class="text-white/80 whitespace-nowrap" style="min-width:60px">off</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <!-- Packet Type Filter -->
+          <div class="flex items-center gap-1">
+            <button id="toggle-up" class="toggle-btn active px-2 py-1 rounded text-xs" title="Uplinks">UP</button>
+            <button id="toggle-join" class="toggle-btn active px-2 py-1 rounded text-xs" title="Join Requests">JOIN</button>
+            <button id="toggle-down" class="toggle-btn active px-2 py-1 rounded text-xs" title="Downlinks">DOWN</button>
+            <button id="toggle-ack" class="toggle-btn active px-2 py-1 rounded text-xs" title="TX Acknowledgements">ACK</button>
+          </div>
+          <div class="border-l border-white/20 h-4"></div>
+          <!-- Device Filter -->
+          <div class="flex items-center gap-2">
+            <button id="toggle-owned" class="toggle-btn active px-2 py-1 rounded text-xs">My Devices</button>
+            <button id="toggle-foreign" class="toggle-btn active px-2 py-1 rounded text-xs">Unknown</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Gateway Filter -->
+    <div class="bg-white/5 border-b border-white/10 px-6 flex-shrink-0">
+      <div class="flex items-center gap-1 py-1 overflow-x-auto">
+        <button class="gateway-tab active px-3 py-1 rounded text-xs" data-gateway="">All Gateways</button>
+        <div id="gateway-tabs" class="flex gap-1"></div>
+      </div>
+    </div>
+
+    <!-- Packet Feed (header + rows rendered by packet-feed.js) -->
+    <div id="live-feed-container" class="flex flex-col flex-1 min-h-0"></div>
+  </div>
+
+  <script src="packet-feed.js"></script>
+  <script src="live.js"></script>
+</body>
+</html>

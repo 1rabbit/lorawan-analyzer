@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    volumes:
+      - ./clickhouse/data:/var/lib/clickhouse
+      - ./clickhouse/config/allow-remote.xml:/etc/clickhouse-server/users.d/allow-remote.xml:ro
+      - ./clickhouse/config/system-logs.xml:/etc/clickhouse-server/config.d/system-logs.xml:ro
+      - ./clickhouse/config/logging.xml:/etc/clickhouse-server/config.d/logging.xml:ro
+    environment:
+      CLICKHOUSE_DB: lorawan
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  analyzer:
+    build: .
+    ports:
+      - "15337:3000"
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+      - ./public:/app/public:ro
+    environment:
+      CONFIG_PATH: /app/config.toml
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Optional: local MQTT broker for multiplex setups.
+  # Use this when you need to aggregate MQTT from multiple ChirpStack instances.
+  # Enable with: docker compose --profile multiplex up -d
+  # When using this, set mqtt.server in config.toml to "tcp://mosquitto:1883"
+  mosquitto:
+    image: eclipse-mosquitto:2
+    profiles:
+      - multiplex
+    ports:
+      - "15338:1883"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 3 mosquitto_sub -h localhost -t '$$SYS/#' -C 1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped

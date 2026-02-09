@@ -1,0 +1,7 @@
+<clickhouse>
+    <logger>
+        <level>error</level>
+        <size>10M</size>
+        <count>1</count>
+    </logger>
+</clickhouse>

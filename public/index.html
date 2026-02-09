@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LoRaWAN Analyzer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="text-gray-100 min-h-screen">
+  <div class="flex flex-col h-screen">
+    <!-- Header -->
+    <header class="bg-white/5 border-b border-white/10 px-6 py-2 flex-shrink-0">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-6">
+          <h1 class="text-base font-bold text-white">LoRaWAN Analyzer</h1>
+          <!-- Navigation -->
+          <nav class="flex gap-1">
+            <a href="index.html" class="nav-link active px-3 py-1 rounded text-sm">Dashboard</a>
+            <a href="live.html" class="nav-link px-3 py-1 rounded text-sm">Live Stream</a>
+          </nav>
+          <div class="border-l border-white/20 h-4"></div>
+          <input type="text" id="device-search" placeholder="Search devices..." class="bg-white/10 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/40 w-40 focus:outline-none focus:border-white/40">
+          <div class="flex items-center gap-1 text-xs text-white/60">
+            <span>RSSI</span>
+            <div class="rssi-range-wrap">
+              <input type="range" id="rssi-min" min="-140" max="-30" value="-140" class="rssi-range rssi-range-min">
+              <input type="range" id="rssi-max" min="-140" max="-30" value="-30" class="rssi-range rssi-range-max">
+            </div>
+            <span id="rssi-range-label" class="text-white/80 whitespace-nowrap" style="min-width:60px">off</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <!-- Time Range -->
+          <div class="flex items-center gap-2">
+            <span class="text-white/50 text-sm">Time:</span>
+            <div class="flex gap-1">
+              <button class="time-btn px-2 py-1 rounded text-xs" data-hours="1">1h</button>
+              <button class="time-btn px-2 py-1 rounded text-xs" data-hours="6">6h</button>
+              <button class="time-btn active px-2 py-1 rounded text-xs" data-hours="24">24h</button>
+              <button class="time-btn px-2 py-1 rounded text-xs" data-hours="168">7d</button>
+            </div>
+          </div>
+          <!-- Device Filter -->
+          <div class="flex items-center gap-2">
+            <button id="toggle-owned" class="toggle-btn active px-2 py-1 rounded text-xs">My Devices</button>
+            <button id="toggle-foreign" class="toggle-btn active px-2 py-1 rounded text-xs">Unknown Devices</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <!-- Gateway Tabs -->
+      <div class="bg-white/5 border-b border-white/10 px-6 flex-shrink-0">
+        <div class="flex items-center gap-1 py-1 overflow-x-auto">
+          <button class="gateway-tab active px-3 py-1 rounded text-xs" data-gateway="">All Gateways</button>
+          <div id="gateway-tabs" class="flex gap-1"></div>
+        </div>
+      </div>
+
+      <!-- Content Area -->
+      <div class="flex-1 overflow-auto">
+        <!-- Overview Section -->
+        <div class="p-6">
+          <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4 mb-6">
+            <!-- Stats Cards -->
+            <div class="stat-card">
+              <div class="label">Packets</div>
+              <div id="stat-packets" class="value">-</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Active Devices</div>
+              <div id="stat-devices" class="value">-</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Total Airtime</div>
+              <div id="stat-airtime" class="value">-</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">RX Airtime</div>
+              <div id="stat-rx-airtime" class="value">-</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">TX Duty Cycle</div>
+              <div id="stat-tx-duty" class="value">-</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Downlinks</div>
+              <div id="stat-downlinks" class="value">-</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">TX ACK OK</div>
+              <div id="stat-ack-ok" class="value">-</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">TX ACK Fail</div>
+              <div id="stat-ack-fail" class="value">-</div>
+            </div>
+          </div>
+
+          <!-- Charts Row -->
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+            <!-- Traffic Chart -->
+            <div class="chart-card">
+              <h3 class="chart-title">Traffic Over Time</h3>
+              <div class="h-64">
+                <canvas id="traffic-chart"></canvas>
+              </div>
+            </div>
+            <!-- Operator Chart -->
+            <div class="chart-card">
+              <h3 class="chart-title">By Operator</h3>
+              <div class="h-64">
+                <canvas id="operator-chart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Row 2 -->
+          <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+            <!-- Channel Usage -->
+            <div class="panel">
+              <h3 class="panel-title">Channel Usage</h3>
+              <div class="h-48">
+                <canvas id="channel-chart"></canvas>
+              </div>
+            </div>
+            <!-- Spreading Factor -->
+            <div class="panel">
+              <h3 class="panel-title">Spreading Factor</h3>
+              <div class="h-48">
+                <canvas id="sf-chart"></canvas>
+              </div>
+            </div>
+            <!-- By Operator -->
+            <div class="panel">
+              <h3 class="panel-title">By Operator</h3>
+              <div id="breakdown-operator" class="space-y-1 max-h-48 overflow-y-auto"></div>
+            </div>
+            <!-- Recent Joins -->
+            <div class="panel">
+              <h3 class="panel-title">Recent Joins</h3>
+              <div id="recent-joins" class="space-y-1 max-h-48 overflow-y-auto"></div>
+            </div>
+          </div>
+
+          <!-- Devices List -->
+          <div class="panel">
+            <h3 class="panel-title">Devices</h3>
+            <div id="device-list" class="space-y-1 max-h-[500px] overflow-y-auto"></div>
+          </div>
+
+          <!-- Hidden summary for now -->
+          <div id="breakdown-summary" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Device Detail Modal -->
+  <div id="device-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="closeDeviceModal()"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-device-addr" class="text-lg font-bold font-mono"></h2>
+        <button onclick="closeDeviceModal()" class="modal-close">&times;</button>
+      </div>
+      <div id="modal-device-body" class="modal-body">
+        <div class="text-gray-500 text-center py-8">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
