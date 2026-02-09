@@ -1,4 +1,4 @@
-import { loadConfig } from './config.js';
+import { loadConfig, loadSettingsFromDb, mergeConfigWithDbSettings } from './config.js';
 import { initClickHouse, closeClickHouse } from './db/index.js';
 import { runMigrations } from './db/migrations.js';
 import { insertPacket, upsertGateway, getCustomOperators } from './db/queries.js';
@@ -8,7 +8,7 @@ import { startApi } from './api/index.js';
 import { SessionTracker } from './session/tracker.js';
 import { DeviceMetadataCache } from './metadata/cache.js';
 import { GatewaySync } from './metadata/gateway-sync.js';
-import type { ParsedPacket, MyDeviceRange, OperatorMapping } from './types.js';
+import type { ParsedPacket, MyDeviceRange, OperatorMapping, MqttConfig, ChirpStackApiConfig, Config } from './types.js';
 
 const CONFIG_PATH = process.env.CONFIG_PATH ?? './config.toml';
 
@@ -33,16 +33,21 @@ function buildKnownDeviceRanges(operators: OperatorMapping[]): MyDeviceRange[] {
 async function main(): Promise<void> {
   console.log('LoRaWAN Analyzer starting...');
 
-  // Load configuration
-  const config = loadConfig(CONFIG_PATH);
+  // Load configuration from TOML (or defaults)
+  const tomlConfig = loadConfig(CONFIG_PATH);
   console.log('Configuration loaded');
 
-  // Initialize ClickHouse
-  initClickHouse(config.clickhouse);
-  console.log(`ClickHouse client initialized: ${config.clickhouse.url}`);
+  // Initialize ClickHouse (always uses TOML/defaults/env - needed before anything else)
+  initClickHouse(tomlConfig.clickhouse);
+  console.log(`ClickHouse client initialized: ${tomlConfig.clickhouse.url}`);
 
   // Run migrations
   await runMigrations();
+
+  // Load settings from DB and merge with TOML (DB overrides TOML)
+  const dbSettings = await loadSettingsFromDb();
+  const config: Config = mergeConfigWithDbSettings(tomlConfig, dbSettings);
+  console.log('DB settings merged with config');
 
   // Load custom operators from DB and config
   const dbOperators = await getCustomOperators();
@@ -58,9 +63,6 @@ async function main(): Promise<void> {
   // Initialize session tracker
   const sessionTracker = new SessionTracker();
   sessionTrackerRef = sessionTracker;
-
-  // Connect to MQTT (non-blocking, auto-reconnects)
-  connectMqtt(config.mqtt);
 
   // Register device metadata handler (from application MQTT topics)
   onDeviceMetadata(async (metadata) => {
@@ -122,6 +124,14 @@ async function main(): Promise<void> {
     }
   });
 
+  // Connect to MQTT only if server is configured
+  const mqttConfigured = config.mqtt.server && config.mqtt.server.length > 0;
+  if (mqttConfigured) {
+    connectMqtt(config.mqtt);
+  } else {
+    console.log('MQTT not configured - waiting for configuration via Settings page');
+  }
+
   // Build known device ranges from operators with known_devices = true
   const myDeviceRanges = buildKnownDeviceRanges(config.operators);
   console.log(`Known device ranges: ${myDeviceRanges.length} prefixes`);
@@ -139,8 +149,39 @@ async function main(): Promise<void> {
     console.log('ChirpStack gateway sync started');
   }
 
-  // Start API server
-  await startApi(config.api, myDeviceRanges, allOperators, metadataCache);
+  // Define callbacks for settings API
+  const onMqttChanged = async (newMqttConfig: MqttConfig): Promise<void> => {
+    console.log('MQTT settings changed, reconnecting...');
+    await disconnectMqtt();
+    if (newMqttConfig.server && newMqttConfig.server.length > 0) {
+      connectMqtt(newMqttConfig);
+    }
+  };
+
+  const onChirpStackApiChanged = async (newConfig: ChirpStackApiConfig | null): Promise<void> => {
+    // Stop existing sync
+    if (gatewaySyncRef) {
+      gatewaySyncRef.stop();
+      gatewaySyncRef = null;
+      console.log('ChirpStack gateway sync stopped');
+    }
+
+    // Start new sync if config provided
+    if (newConfig) {
+      gatewaySyncRef = new GatewaySync(newConfig, async (gatewayId, name) => {
+        await upsertGateway(gatewayId, name);
+        console.log(`[gateway-sync] ${gatewayId} -> ${name}`);
+      });
+      await gatewaySyncRef.start();
+      console.log('ChirpStack gateway sync started');
+    }
+  };
+
+  // Start API server with settings callbacks
+  await startApi(config.api, myDeviceRanges, allOperators, metadataCache, {
+    onMqttChanged,
+    onChirpStackApiChanged,
+  });
 
   console.log('LoRaWAN Analyzer running');
 

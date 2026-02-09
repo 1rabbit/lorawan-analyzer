@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - LoRaWAN Analyzer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="text-gray-100 min-h-screen">
+  <div class="flex flex-col h-screen">
+    <!-- Header -->
+    <header class="bg-white/5 border-b border-white/10 px-6 py-2 flex-shrink-0">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-6">
+          <h1 class="text-base font-bold text-white">LoRaWAN Analyzer</h1>
+          <nav class="flex gap-1">
+            <a href="index.html" class="nav-link px-3 py-1 rounded text-sm">Dashboard</a>
+            <a href="live.html" class="nav-link px-3 py-1 rounded text-sm">Live Stream</a>
+            <a href="settings.html" class="nav-link active px-3 py-1 rounded text-sm">Settings</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="flex-1 overflow-auto p-6">
+      <div class="max-w-4xl mx-auto space-y-6">
+
+        <!-- MQTT Broker Settings -->
+        <div class="panel">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="panel-title mb-0">MQTT Broker</h3>
+            <div class="flex items-center gap-2">
+              <span id="mqtt-status-dot" class="w-2.5 h-2.5 rounded-full bg-gray-500"></span>
+              <span id="mqtt-status-text" class="text-xs text-white/50">Unknown</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-white/50 mb-1">Server URL</label>
+              <input type="text" id="mqtt-server" placeholder="tcp://localhost:1883" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+            </div>
+            <div>
+              <label class="block text-xs text-white/50 mb-1">Topic</label>
+              <input type="text" id="mqtt-topic" placeholder="eu868/gateway/+/event/up" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+            </div>
+            <div>
+              <label class="block text-xs text-white/50 mb-1">Username</label>
+              <input type="text" id="mqtt-username" placeholder="(optional)" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+            </div>
+            <div>
+              <label class="block text-xs text-white/50 mb-1">Password</label>
+              <input type="password" id="mqtt-password" placeholder="(optional)" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+            </div>
+            <div>
+              <label class="block text-xs text-white/50 mb-1">Format</label>
+              <select id="mqtt-format" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                <option value="protobuf">Protobuf (v4)</option>
+                <option value="json">JSON (v3)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-white/50 mb-1">Application Topic</label>
+              <input type="text" id="mqtt-app-topic" placeholder="application/+/device/+/event/up (optional)" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+            </div>
+          </div>
+          <div class="flex items-center gap-3 mt-4">
+            <button id="save-mqtt" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors">Save & Connect</button>
+            <span id="mqtt-save-status" class="text-xs text-white/50"></span>
+          </div>
+        </div>
+
+        <!-- ChirpStack API Settings -->
+        <div class="panel">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="panel-title mb-0">ChirpStack API</h3>
+            <span class="text-xs text-white/30">Optional - enriches gateway names</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-white/50 mb-1">Server URL</label>
+              <input type="text" id="cs-url" placeholder="http://localhost:8080" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+            </div>
+            <div>
+              <label class="block text-xs text-white/50 mb-1">API Key</label>
+              <input type="password" id="cs-api-key" placeholder="API key from ChirpStack" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+            </div>
+          </div>
+          <div class="flex items-center gap-3 mt-4">
+            <button id="save-cs" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors">Save</button>
+            <button id="delete-cs" class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-sm text-white/60 transition-colors">Disable</button>
+            <span id="cs-save-status" class="text-xs text-white/50"></span>
+          </div>
+        </div>
+
+        <!-- Custom Operators -->
+        <div class="panel">
+          <h3 class="panel-title">Custom Operators</h3>
+          <div id="operators-list" class="space-y-1 mb-4"></div>
+          <div class="flex gap-2 items-end">
+            <div class="flex-1">
+              <label class="block text-xs text-white/50 mb-1">Prefix (hex)</label>
+              <input type="text" id="op-prefix" placeholder="260B0000/24" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+            </div>
+            <div class="flex-1">
+              <label class="block text-xs text-white/50 mb-1">Name</label>
+              <input type="text" id="op-name" placeholder="My Network" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+            </div>
+            <div class="w-20">
+              <label class="block text-xs text-white/50 mb-1">Priority</label>
+              <input type="number" id="op-priority" value="10" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+            </div>
+            <button id="add-operator" class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-sm font-medium transition-colors whitespace-nowrap">Add</button>
+          </div>
+        </div>
+
+        <!-- Hide Rules -->
+        <div class="panel">
+          <h3 class="panel-title">Hide Rules</h3>
+          <div id="hide-rules-list" class="space-y-1 mb-4"></div>
+          <div class="flex gap-2 items-end">
+            <div class="w-32">
+              <label class="block text-xs text-white/50 mb-1">Type</label>
+              <select id="hr-type" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                <option value="dev_addr">DevAddr</option>
+                <option value="join_eui">JoinEUI</option>
+              </select>
+            </div>
+            <div class="flex-1">
+              <label class="block text-xs text-white/50 mb-1">Prefix</label>
+              <input type="text" id="hr-prefix" placeholder="260B0000/24" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+            </div>
+            <div class="flex-1">
+              <label class="block text-xs text-white/50 mb-1">Description</label>
+              <input type="text" id="hr-desc" placeholder="(optional)" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+            </div>
+            <button id="add-hide-rule" class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-sm font-medium transition-colors whitespace-nowrap">Add</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>

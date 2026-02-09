@@ -118,5 +118,19 @@ export async function runMigrations(): Promise<void> {
   });
   console.log('  Created device_metadata table');
 
+  // Create settings table
+  await client.command({
+    query: `
+      CREATE TABLE IF NOT EXISTS settings (
+        key String,
+        value String,
+        updated_at DateTime64(3)
+      )
+      ENGINE = ReplacingMergeTree(updated_at)
+      ORDER BY key
+    `,
+  });
+  console.log('  Created settings table');
+
   console.log('Migrations complete');
 }

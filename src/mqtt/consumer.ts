@@ -8,6 +8,7 @@ type PacketHandler = (packet: ParsedPacket) => void;
 type MetadataHandler = (metadata: DeviceMetadata) => void;
 
 let client: MqttClient | null = null;
+let currentServer: string | null = null;
 let packetHandlers: PacketHandler[] = [];
 let metadataHandlers: MetadataHandler[] = [];
 
@@ -32,6 +33,7 @@ export function connectMqtt(config: MqttConfig): MqttClient {
   };
 
   console.log(`Connecting to MQTT broker: ${config.server}`);
+  currentServer = config.server;
   client = mqtt.connect(config.server, options);
 
   client.on('connect', () => {
@@ -213,6 +215,13 @@ function handleApplicationMessage(topic: string, message: Buffer): void {
   }
 }
 
+export function getMqttStatus(): { connected: boolean; server: string | null } {
+  return {
+    connected: client?.connected ?? false,
+    server: currentServer,
+  };
+}
+
 export function getMqttClient(): MqttClient | null {
   return client;
 }
@@ -222,6 +231,7 @@ export async function disconnectMqtt(): Promise<void> {
     await new Promise<void>((resolve) => {
       client!.end(false, {}, () => {
         client = null;
+        currentServer = null;
         resolve();
       });
     });

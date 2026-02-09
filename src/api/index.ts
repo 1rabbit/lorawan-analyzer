@@ -10,6 +10,7 @@ import { deviceRoutes } from './devices.js';
 import { statsRoutes } from './stats.js';
 import { operatorRoutes } from './operators.js';
 import { configRoutes, setMyDeviceRanges, setOperatorColors } from './config.js';
+import { settingsRoutes, type SettingsCallbacks } from './settings.js';
 import { addLiveClient, startLiveBroadcast } from '../websocket/live.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -25,7 +26,7 @@ export function getMetadataCache(): DeviceMetadataCache | null {
   return metadataCacheRef;
 }
 
-export async function startApi(config: ApiConfig, myDevices: MyDeviceRange[] = [], operators: OperatorMapping[] = [], metadataCache?: DeviceMetadataCache): Promise<void> {
+export async function startApi(config: ApiConfig, myDevices: MyDeviceRange[] = [], operators: OperatorMapping[] = [], metadataCache?: DeviceMetadataCache, callbacks?: SettingsCallbacks): Promise<void> {
   metadataCacheRef = metadataCache ?? null;
   setMyDeviceRanges(myDevices);
   setOperatorColors(operators);
@@ -48,6 +49,9 @@ export async function startApi(config: ApiConfig, myDevices: MyDeviceRange[] = [
   await fastify.register(statsRoutes);
   await fastify.register(operatorRoutes);
   await fastify.register(configRoutes);
+  if (callbacks) {
+    await fastify.register(settingsRoutes(callbacks));
+  }
 
   // Device metadata API
   fastify.get('/api/metadata/devices', async () => {

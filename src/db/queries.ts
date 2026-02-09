@@ -1320,6 +1320,50 @@ export async function upsertDeviceMetadata(metadata: DeviceMetadata): Promise<vo
   });
 }
 
+// ============================================
+// Settings Queries
+// ============================================
+
+export async function getSetting(key: string): Promise<string | null> {
+  const client = getClickHouse();
+
+  const result = await client.query({
+    query: `SELECT value FROM settings FINAL WHERE key = {key:String}`,
+    query_params: { key },
+    format: 'JSONEachRow',
+  });
+
+  const rows = await result.json<{ value: string }>();
+  return rows.length > 0 ? rows[0].value : null;
+}
+
+export async function setSetting(key: string, value: string): Promise<void> {
+  const client = getClickHouse();
+  const now = new Date().toISOString().replace('T', ' ').replace('Z', '');
+
+  await client.insert({
+    table: 'settings',
+    values: [{ key, value, updated_at: now }],
+    format: 'JSONEachRow',
+  });
+}
+
+export async function getAllSettings(): Promise<Record<string, string>> {
+  const client = getClickHouse();
+
+  const result = await client.query({
+    query: `SELECT key, value FROM settings FINAL`,
+    format: 'JSONEachRow',
+  });
+
+  const rows = await result.json<{ key: string; value: string }>();
+  const settings: Record<string, string> = {};
+  for (const row of rows) {
+    settings[row.key] = row.value;
+  }
+  return settings;
+}
+
 export async function getAllDeviceMetadata(): Promise<DeviceMetadata[]> {
   const client = getClickHouse();
 
