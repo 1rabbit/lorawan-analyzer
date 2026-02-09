@@ -4,6 +4,7 @@ import fastifyWebsocket from '@fastify/websocket';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import type { ApiConfig, MyDeviceRange, OperatorMapping } from '../types.js';
+import type { DeviceMetadataCache } from '../metadata/cache.js';
 import { gatewayRoutes } from './gateways.js';
 import { deviceRoutes } from './devices.js';
 import { statsRoutes } from './stats.js';
@@ -18,7 +19,14 @@ const publicDir = process.env.NODE_ENV === 'production'
   ? '/app/public'
   : join(__dirname, '../../public');
 
-export async function startApi(config: ApiConfig, myDevices: MyDeviceRange[] = [], operators: OperatorMapping[] = []): Promise<void> {
+let metadataCacheRef: DeviceMetadataCache | null = null;
+
+export function getMetadataCache(): DeviceMetadataCache | null {
+  return metadataCacheRef;
+}
+
+export async function startApi(config: ApiConfig, myDevices: MyDeviceRange[] = [], operators: OperatorMapping[] = [], metadataCache?: DeviceMetadataCache): Promise<void> {
+  metadataCacheRef = metadataCache ?? null;
   setMyDeviceRanges(myDevices);
   setOperatorColors(operators);
   const fastify = Fastify({
@@ -40,6 +48,12 @@ export async function startApi(config: ApiConfig, myDevices: MyDeviceRange[] = [
   await fastify.register(statsRoutes);
   await fastify.register(operatorRoutes);
   await fastify.register(configRoutes);
+
+  // Device metadata API
+  fastify.get('/api/metadata/devices', async () => {
+    const cache = getMetadataCache();
+    return { devices: cache?.getAll() ?? [] };
+  });
 
   // Parse WS filter params shared by both live endpoints
   function parseLiveFilters(query: { types?: string; rssi_min?: string; rssi_max?: string; filter_mode?: string; prefixes?: string }) {

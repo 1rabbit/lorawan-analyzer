@@ -101,5 +101,22 @@ export async function runMigrations(): Promise<void> {
   });
   console.log('  Created hide_rules table');
 
+  // Create device_metadata table
+  await client.command({
+    query: `
+      CREATE TABLE IF NOT EXISTS device_metadata (
+        dev_addr String,
+        dev_eui String,
+        device_name String,
+        application_name String,
+        device_profile_name String,
+        last_seen DateTime64(3)
+      )
+      ENGINE = ReplacingMergeTree(last_seen)
+      ORDER BY dev_addr
+    `,
+  });
+  console.log('  Created device_metadata table');
+
   console.log('Migrations complete');
 }

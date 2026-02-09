@@ -1,9 +1,15 @@
+export interface ChirpStackApiConfig {
+  url: string;
+  api_key: string;
+}
+
 export interface Config {
   mqtt: MqttConfig;
   clickhouse: ClickHouseConfig;
   api: ApiConfig;
   operators: OperatorMapping[];
   hide_rules: HideRule[];
+  chirpstack_api?: ChirpStackApiConfig;
 }
 
 export interface MqttConfig {
@@ -13,6 +19,7 @@ export interface MqttConfig {
   topic: string;
   format: 'protobuf' | 'json';
   downlink_sources?: MqttDownlinkSource[];
+  application_topic?: string;
 }
 
 export interface MqttDownlinkSource {
@@ -85,6 +92,7 @@ export interface LivePacket {
   airtime_ms: number;
   tx_status?: string;  // For tx_ack packets
   confirmed?: boolean;  // For data/downlink packets
+  device_name?: string;  // From device metadata cache
 }
 
 export interface GatewayStats {
@@ -126,6 +134,10 @@ export interface DeviceProfile {
   total_airtime_ms: number;
   avg_rssi: number;
   avg_snr: number;
+  device_name?: string;
+  dev_eui?: string;
+  application_name?: string;
+  device_profile_name?: string;
 }
 
 export interface JoinEuiGroup {
@@ -171,6 +183,16 @@ export interface TreeDevice {
   last_seen: string;
   avg_rssi: number;
   avg_snr: number;
+  device_name?: string;
+}
+
+export interface DeviceMetadata {
+  dev_addr: string;
+  dev_eui: string;
+  device_name: string;
+  application_name: string;
+  device_profile_name: string;
+  last_seen: Date;
 }
 
 export interface FCntTimelinePoint {

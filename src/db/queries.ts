@@ -15,6 +15,7 @@ import type {
   ChannelStats,
   SFStats,
   JoinEuiGroup,
+  DeviceMetadata,
 } from '../types.js';
 
 export type DeviceFilter = {
@@ -1295,4 +1296,46 @@ export async function getRecentPackets(
   });
 
   return result.json();
+}
+
+// ============================================
+// Device Metadata Queries
+// ============================================
+
+export async function upsertDeviceMetadata(metadata: DeviceMetadata): Promise<void> {
+  const client = getClickHouse();
+  const now = new Date().toISOString().replace('T', ' ').replace('Z', '');
+
+  await client.insert({
+    table: 'device_metadata',
+    values: [{
+      dev_addr: metadata.dev_addr,
+      dev_eui: metadata.dev_eui,
+      device_name: metadata.device_name,
+      application_name: metadata.application_name,
+      device_profile_name: metadata.device_profile_name,
+      last_seen: now,
+    }],
+    format: 'JSONEachRow',
+  });
+}
+
+export async function getAllDeviceMetadata(): Promise<DeviceMetadata[]> {
+  const client = getClickHouse();
+
+  const result = await client.query({
+    query: `
+      SELECT
+        dev_addr,
+        dev_eui,
+        device_name,
+        application_name,
+        device_profile_name,
+        last_seen
+      FROM device_metadata FINAL
+    `,
+    format: 'JSONEachRow',
+  });
+
+  return result.json<DeviceMetadata>();
 }

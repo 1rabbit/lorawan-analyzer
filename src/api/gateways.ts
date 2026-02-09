@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { getMetadataCache } from './index.js';
 import {
   getGateways,
   getGatewayById,
@@ -45,6 +46,16 @@ export async function gatewayRoutes(fastify: FastifyInstance): Promise<void> {
     const rssiMin = request.query.rssi_min ? parseInt(request.query.rssi_min, 10) : undefined;
     const rssiMax = request.query.rssi_max ? parseInt(request.query.rssi_max, 10) : undefined;
     const devices = await getGatewayDevices(request.params.id, hours, limit, rssiMin, rssiMax);
+    // Enrich devices with metadata
+    const cache = getMetadataCache();
+    if (cache) {
+      for (const d of devices) {
+        const meta = cache.getByDevAddr(d.dev_addr);
+        if (meta) {
+          (d as any).device_name = meta.device_name;
+        }
+      }
+    }
     return { devices };
   });
 
@@ -71,6 +82,16 @@ export async function gatewayRoutes(fastify: FastifyInstance): Promise<void> {
       hours,
       limit
     );
+    // Enrich devices with metadata
+    const cache2 = getMetadataCache();
+    if (cache2) {
+      for (const d of devices) {
+        const meta = cache2.getByDevAddr(d.dev_addr);
+        if (meta) {
+          d.device_name = meta.device_name;
+        }
+      }
+    }
     return { devices };
   });
 }

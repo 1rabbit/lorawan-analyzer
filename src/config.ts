@@ -36,5 +36,6 @@ export function loadConfig(configPath: string): Config {
     api: { ...DEFAULT_CONFIG.api, ...parsed.api },
     operators: parsed.operators ?? [],
     hide_rules: parsed.hide_rules ?? [],
+    chirpstack_api: (parsed as any).chirpstack_api ?? undefined,
   };
 }

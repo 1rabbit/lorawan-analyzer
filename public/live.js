@@ -245,11 +245,14 @@ async function loadGateways() {
 
 function renderGatewayTabs() {
   const container = document.getElementById('gateway-tabs');
-  container.innerHTML = gateways.map(gw => `
-    <button class="gateway-tab px-3 py-1 rounded text-xs" data-gateway="${gw.gateway_id}" title="${gw.gateway_id}">
-      ${gw.gateway_id}
-    </button>
-  `).join('');
+  container.innerHTML = gateways.map(gw => {
+    const label = gw.name || gw.gateway_id;
+    return `
+      <button class="gateway-tab px-3 py-1 rounded text-xs" data-gateway="${gw.gateway_id}" title="${gw.gateway_id}">
+        ${label}
+      </button>
+    `;
+  }).join('');
 
   container.querySelectorAll('.gateway-tab').forEach(tab => {
     tab.addEventListener('click', () => selectGateway(tab.dataset.gateway));

@@ -156,6 +156,20 @@ async function loadDeviceData() {
     opEl.style.color = getOperatorColor(profile.operator);
     document.getElementById('device-ownership').textContent = isOwned ? '(My Device)' : '';
 
+    // Display device metadata if available
+    if (profile.device_name) {
+      document.getElementById('device-name').textContent = profile.device_name;
+    }
+    if (profile.dev_eui) {
+      document.getElementById('device-deveui').textContent = profile.dev_eui;
+    }
+    if (profile.application_name) {
+      document.getElementById('device-app').textContent = profile.application_name;
+    }
+    if (profile.device_profile_name) {
+      document.getElementById('device-profile-type').textContent = profile.device_profile_name;
+    }
+
     // Calculate stats - use fcnt timeline for accurate interval (accounts for lost packets)
     const avgInterval = calculateAvgIntervalFromFCnt(fcntTimeline);
     const uniqueGateways = [...new Set(activity.map(p => p.gateway_id))];

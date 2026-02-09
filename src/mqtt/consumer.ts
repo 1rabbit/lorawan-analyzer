@@ -1,13 +1,15 @@
 import mqtt, { MqttClient, IClientOptions } from 'mqtt';
-import type { MqttConfig, ParsedPacket } from '../types.js';
+import type { MqttConfig, ParsedPacket, DeviceMetadata } from '../types.js';
 import { parseUplinkFrame, parseProtobufUplink } from '../parser/uplink.js';
 import { parseDownlinkFrame, parseProtobufDownlink } from '../parser/downlink.js';
 import { parseTxAck, parseProtobufTxAck } from '../parser/txack.js';
 
 type PacketHandler = (packet: ParsedPacket) => void;
+type MetadataHandler = (metadata: DeviceMetadata) => void;
 
 let client: MqttClient | null = null;
 let packetHandlers: PacketHandler[] = [];
+let metadataHandlers: MetadataHandler[] = [];
 
 export function onPacket(handler: PacketHandler): void {
   packetHandlers.push(handler);
@@ -15,6 +17,10 @@ export function onPacket(handler: PacketHandler): void {
 
 export function removePacketHandler(handler: PacketHandler): void {
   packetHandlers = packetHandlers.filter(h => h !== handler);
+}
+
+export function onDeviceMetadata(handler: MetadataHandler): void {
+  metadataHandlers.push(handler);
 }
 
 export function connectMqtt(config: MqttConfig): MqttClient {
@@ -49,6 +55,17 @@ export function connectMqtt(config: MqttConfig): MqttClient {
         }
       });
     }
+
+    // Subscribe to application-level integration topics (if configured)
+    if (config.application_topic) {
+      client!.subscribe(config.application_topic, { qos: 0 }, (err) => {
+        if (err) {
+          console.error(`MQTT subscribe error for ${config.application_topic}:`, err);
+        } else {
+          console.log(`Subscribed to application topic: ${config.application_topic}`);
+        }
+      });
+    }
   });
 
   client.on('error', (err) => {
@@ -77,6 +94,12 @@ function getEventType(topic: string): EventType {
 }
 
 function handleMessage(topic: string, message: Buffer, format: 'protobuf' | 'json'): void {
+  // Check if this is an application integration topic
+  if (topic.startsWith('application/')) {
+    handleApplicationMessage(topic, message);
+    return;
+  }
+
   // Extract gateway ID from topic
   // Topic format: eu868/gateway/{gateway_id}/event/up|ack or /command/down
   const parts = topic.split('/');
@@ -144,6 +167,36 @@ function handleMessage(topic: string, message: Buffer, format: 'protobuf' | 'jso
     }
   } catch (err) {
     console.error(`Error parsing ${eventType} message:`, err);
+  }
+}
+
+function handleApplicationMessage(topic: string, message: Buffer): void {
+  try {
+    const data = JSON.parse(message.toString());
+    if (!data.deviceInfo) return;
+
+    const info = data.deviceInfo;
+    const devAddr = data.devAddr || null;
+    if (!devAddr) return;
+
+    const metadata: DeviceMetadata = {
+      dev_addr: devAddr.toUpperCase(),
+      dev_eui: (info.devEui || '').toUpperCase(),
+      device_name: info.deviceName || '',
+      application_name: info.applicationName || '',
+      device_profile_name: info.deviceProfileName || '',
+      last_seen: new Date(),
+    };
+
+    for (const handler of metadataHandlers) {
+      try {
+        handler(metadata);
+      } catch (err) {
+        console.error('Metadata handler error:', err);
+      }
+    }
+  } catch (err) {
+    // Silently ignore parse errors for non-JSON messages
   }
 }
 

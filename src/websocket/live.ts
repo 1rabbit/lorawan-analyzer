@@ -1,6 +1,7 @@
 import type { WebSocket } from '@fastify/websocket';
 import type { ParsedPacket, LivePacket } from '../types.js';
 import { onPacket, removePacketHandler } from '../mqtt/consumer.js';
+import { getMetadataCache } from '../api/index.js';
 
 interface DevicePrefix {
   prefix: number;
@@ -118,6 +119,12 @@ function convertToLivePacket(packet: ParsedPacket): LivePacket {
     payload_size: packet.payload_size,
     airtime_ms: packet.airtime_us / 1000,
   };
+
+  // Enrich with device name from metadata cache
+  const metadata = packet.dev_addr ? getMetadataCache()?.getByDevAddr(packet.dev_addr) : null;
+  if (metadata) {
+    base.device_name = metadata.device_name;
+  }
 
   if (packet.packet_type === 'data' || packet.packet_type === 'downlink') {
     return {

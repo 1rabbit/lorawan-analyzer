@@ -2,10 +2,12 @@ import { loadConfig } from './config.js';
 import { initClickHouse, closeClickHouse } from './db/index.js';
 import { runMigrations } from './db/migrations.js';
 import { insertPacket, upsertGateway, getCustomOperators } from './db/queries.js';
-import { connectMqtt, onPacket, disconnectMqtt } from './mqtt/consumer.js';
+import { connectMqtt, onPacket, onDeviceMetadata, disconnectMqtt } from './mqtt/consumer.js';
 import { initOperatorPrefixes } from './operators/prefixes.js';
 import { startApi } from './api/index.js';
 import { SessionTracker } from './session/tracker.js';
+import { DeviceMetadataCache } from './metadata/cache.js';
+import { GatewaySync } from './metadata/gateway-sync.js';
 import type { ParsedPacket, MyDeviceRange, OperatorMapping } from './types.js';
 
 const CONFIG_PATH = process.env.CONFIG_PATH ?? './config.toml';
@@ -48,12 +50,27 @@ async function main(): Promise<void> {
   initOperatorPrefixes(allOperators);
   console.log(`Loaded ${allOperators.length} custom operator mappings`);
 
+  // Initialize device metadata cache
+  const metadataCache = new DeviceMetadataCache();
+  await metadataCache.loadFromDatabase();
+  console.log(`Device metadata cache loaded: ${metadataCache.size} devices`);
+
   // Initialize session tracker
   const sessionTracker = new SessionTracker();
   sessionTrackerRef = sessionTracker;
 
   // Connect to MQTT (non-blocking, auto-reconnects)
   connectMqtt(config.mqtt);
+
+  // Register device metadata handler (from application MQTT topics)
+  onDeviceMetadata(async (metadata) => {
+    try {
+      await metadataCache.upsert(metadata);
+      console.log(`[metadata] ${metadata.dev_addr} -> ${metadata.device_name} (${metadata.application_name})`);
+    } catch (err) {
+      console.error('Error updating device metadata:', err);
+    }
+  });
 
   // Handle incoming packets
   onPacket(async (packet: ParsedPacket) => {
@@ -112,8 +129,18 @@ async function main(): Promise<void> {
     console.log('Known device prefixes:', myDeviceRanges.map(r => r.prefix).join(', '));
   }
 
+  // Optional: Start gateway name sync from ChirpStack API
+  if (config.chirpstack_api) {
+    gatewaySyncRef = new GatewaySync(config.chirpstack_api, async (gatewayId, name) => {
+      await upsertGateway(gatewayId, name);
+      console.log(`[gateway-sync] ${gatewayId} -> ${name}`);
+    });
+    await gatewaySyncRef.start();
+    console.log('ChirpStack gateway sync started');
+  }
+
   // Start API server
-  await startApi(config.api, myDeviceRanges, allOperators);
+  await startApi(config.api, myDeviceRanges, allOperators, metadataCache);
 
   console.log('LoRaWAN Analyzer running');
 
@@ -123,12 +150,14 @@ async function main(): Promise<void> {
 }
 
 let sessionTrackerRef: SessionTracker | null = null;
+let gatewaySyncRef: GatewaySync | null = null;
 
 async function shutdown(): Promise<void> {
   console.log('\nShutting down...');
 
   try {
     sessionTrackerRef?.stopCleanup();
+    gatewaySyncRef?.stop();
     await disconnectMqtt();
     await closeClickHouse();
   } catch (err) {

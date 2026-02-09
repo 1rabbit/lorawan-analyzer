@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { getMetadataCache } from './index.js';
 import {
   getDeviceActivity,
   getJoinRequests,
@@ -46,6 +47,14 @@ export async function deviceRoutes(fastify: FastifyInstance): Promise<void> {
     if (!profile) {
       reply.code(404);
       return { error: 'Device not found' };
+    }
+    // Enrich with device metadata from cache
+    const metadata = getMetadataCache()?.getByDevAddr(request.params.devaddr.toUpperCase());
+    if (metadata) {
+      profile.device_name = metadata.device_name;
+      profile.dev_eui = metadata.dev_eui;
+      profile.application_name = metadata.application_name;
+      profile.device_profile_name = metadata.device_profile_name;
     }
     return { profile };
   });

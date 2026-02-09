@@ -24,6 +24,11 @@ topic = "eu868/gateway/+/event/up"
 # Message format: "protobuf" (default, ChirpStack v4) or "json" (ChirpStack v3 / JSON marshaler)
 format = "protobuf"
 
+# Application-level MQTT integration for device metadata (optional)
+# Subscribes to ChirpStack application events to enrich devices with names,
+# DevEUI, application name, and device profile. JSON format (ChirpStack v4 default).
+# application_topic = "application/+/device/+/event/+"
+
 [clickhouse]
 # When using Docker Compose, keep this as-is (uses the service name).
 # For native installs, use "http://localhost:8123".
@@ -59,6 +64,14 @@ bind = "0.0.0.0:3000"
 # type = "join_eui"
 # prefix = "70B3D57ED0000000/64"
 # description = "Hide specific JoinEUI"
+
+# --- ChirpStack API integration for gateway names (optional) ---
+# Fetches gateway names from the ChirpStack REST API every 5 minutes.
+# Requires an API key from ChirpStack (API Keys section in the web UI).
+#
+# [chirpstack_api]
+# url = "http://chirpstack:8080"
+# api_key = "your-api-key-here"
 
 # --- Multiplex MQTT setup (advanced) ---
 # If you enabled the bundled mosquitto broker (docker compose --profile multiplex up),

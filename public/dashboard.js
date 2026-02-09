@@ -10,6 +10,7 @@ let operatorColors = {};
 let deviceSearchText = '';
 let rssiFilterMin = -200;
 let rssiFilterMax = 0;
+let deviceMetadataMap = {};
 
 // Load filter state from localStorage
 function loadFilterState() {
@@ -81,7 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.classList.toggle('active', hours === selectedHours);
   });
 
-  await Promise.all([loadMyDevicesConfig(), loadOperatorColors()]);
+  await Promise.all([loadMyDevicesConfig(), loadOperatorColors(), loadDeviceMetadata()]);
   loadGateways();
   loadAllData();
   initCharts();
@@ -245,6 +246,19 @@ function isMyDevice(devAddr) {
   return false;
 }
 
+// Device Metadata
+async function loadDeviceMetadata() {
+  try {
+    const data = await api('/api/metadata/devices');
+    deviceMetadataMap = {};
+    for (const d of data.devices || []) {
+      deviceMetadataMap[d.dev_addr] = d;
+    }
+  } catch (e) {
+    // Metadata enrichment is optional
+  }
+}
+
 // Gateway Management
 async function loadGateways() {
   const data = await api('/api/gateways');
@@ -254,12 +268,15 @@ async function loadGateways() {
 
 function renderGatewayTabs() {
   const container = document.getElementById('gateway-tabs');
-  container.innerHTML = gateways.map(gw => `
-    <button class="gateway-tab px-3 py-1 rounded text-xs" data-gateway="${gw.gateway_id}" title="${gw.gateway_id}">
-      ${gw.gateway_id}
-      <span class="text-gray-500 ml-1">${formatNumber(gw.packet_count)}</span>
-    </button>
-  `).join('');
+  container.innerHTML = gateways.map(gw => {
+    const label = gw.name || gw.gateway_id;
+    return `
+      <button class="gateway-tab px-3 py-1 rounded text-xs" data-gateway="${gw.gateway_id}" title="${gw.gateway_id}">
+        ${label}
+        <span class="text-gray-500 ml-1">${formatNumber(gw.packet_count)}</span>
+      </button>
+    `;
+  }).join('');
 
   container.querySelectorAll('.gateway-tab').forEach(tab => {
     tab.addEventListener('click', () => selectGateway(tab.dataset.gateway));
@@ -567,7 +584,8 @@ async function loadDeviceBreakdown() {
     // Filter by search text
     if (deviceSearchText) {
       devices = devices.filter(d => {
-        const searchable = [d.dev_addr, d.operator].filter(Boolean).join(' ').toLowerCase();
+        const meta = deviceMetadataMap[d.dev_addr];
+        const searchable = [d.dev_addr, d.operator, meta?.device_name, meta?.dev_eui].filter(Boolean).join(' ').toLowerCase();
         return searchable.includes(deviceSearchText);
       });
     }
@@ -592,6 +610,7 @@ async function loadDeviceBreakdown() {
           <div class="device-detail-item ${isOwned ? 'mine' : ''}" onclick="window.location.href='device.html?addr=${d.dev_addr}'">
             <div class="device-detail-main">
               <span class="device-addr ${isOwned ? 'text-blue-400' : ''}">${d.dev_addr}</span>
+              ${d.device_name || deviceMetadataMap[d.dev_addr]?.device_name ? `<span class="text-xs text-white/50 truncate max-w-[140px]" title="${d.device_name || deviceMetadataMap[d.dev_addr]?.device_name}">${d.device_name || deviceMetadataMap[d.dev_addr]?.device_name}</span>` : ''}
               <span class="device-operator" style="color: ${opColor}">${d.operator || '?'}</span>
               <span class="device-sf">${sfDisplay}</span>
               <span class="device-interval">${intervalDisplay}</span>
