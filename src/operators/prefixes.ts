@@ -173,6 +173,204 @@ const BUILTIN_OPERATORS: Array<{ prefix: string; name: string }> = [
   { prefix: 'FE001800/21', name: 'LNX Solutions' },        // NetID 0xE00030
   { prefix: 'FE002000/21', name: 'Cometa' },               // NetID 0xE00040
   { prefix: 'FE002800/21', name: 'Senwize' },              // NetID 0xE00050
+
+  // ==========================================
+  // Helium OUI Prefixes
+  // ==========================================
+  { prefix: '48000000/22', name: 'Foundation Console' },                // OUI 1
+  { prefix: '48000400/22', name: 'Nova Dev Console'},                   // OUI 2
+  { prefix: '48000800/29', name: 'Helium Foundation Staging Console' }, // OUI 3
+  { prefix: '48000808/29', name: 'Nova Staging Console' },              // OUI 4
+  { prefix: '48000810/29', name: 'Helium OUI 5' },                      // OUI 5
+  { prefix: '48000950/28', name: 'HeyIoT.xyz' },                        // OUI 6
+  { prefix: '48000960/27', name: 'HeyIoT.xyz' },                        // OUI 6
+  { prefix: '48000980/26', name: 'HeyIoT.xyz' },                        // OUI 6
+  { prefix: '48000948/29', name: 'HeyIoT.xyz' },                        // OUI 6
+  { prefix: '48000818/29', name: 'HeyIoT.xyz' },                        // OUI 6
+  { prefix: '48000820/29', name: 'Helium OUI 7' },                      // OUI 7
+  { prefix: '48000828/29', name: 'Helium OUI 8' },                      // OUI 8
+  { prefix: '48000830/29', name: 'Nova Roaming US' },                   // OUI 9
+  { prefix: '48000838/29', name: 'Helium OUI 10' },                     // OUI 10
+  { prefix: '48000840/29', name: 'Helium OUI 11' },                     // OUI 11
+  { prefix: '48000860/27', name: 'LoneStar Tracking' },                 // OUI 12
+  { prefix: '480009E0/27', name: 'LoneStar Tracking' },                 // OUI 12
+  { prefix: '48000A00/26', name: 'LoneStar Tracking' },                 // OUI 12
+  { prefix: '48000A40/27', name: 'LoneStar Tracking' },                 // OUI 12
+  { prefix: '48000848/29', name: 'Helium OUI 13' },                     // OUI 13
+  { prefix: '48000850/29', name: 'Helium OUI 14' },                     // OUI 14
+  { prefix: '48000858/29', name: 'Helium OUI 15' },                     // OUI 15
+  { prefix: '48000880/29', name: 'Nova Roaming EU' },                   // OUI 16
+  { prefix: '48000888/29', name: 'Helium OUI 17' },                     // OUI 17
+  { prefix: '48000890/28', name: 'Helium OUI 18' },                     // OUI 18
+  { prefix: '480008A0/29', name: 'Helium OUI 19' },                     // OUI 19
+  { prefix: '480008A8/29', name: 'Helium OUI 20' },                     // OUI 20
+  { prefix: '480008B0/29', name: 'Helium OUI 21' },                     // OUI 21
+  { prefix: '480008B8/29', name: 'Helium OUI 22' },                     // OUI 22
+  { prefix: '480008C0/29', name: 'Helium OUI 23' },                     // OUI 23
+  { prefix: '480008C8/29', name: 'Helium OUI 24' },                     // OUI 24
+  { prefix: '480008D0/29', name: 'Helium OUI 25' },                     // OUI 25
+  { prefix: '480008D8/29', name: 'Helium OUI 26' },                     // OUI 26
+  { prefix: '480008E0/29', name: 'Helium OUI 27' },                     // OUI 27
+  { prefix: '480008E8/29', name: 'Helium OUI 28' },                     // OUI 28
+  { prefix: '480008F0/29', name: 'Helium OUI 29' },                     // OUI 29
+  { prefix: '480008F8/29', name: 'Helium OUI 30' },                     // OUI 30
+  { prefix: '48000900/29', name: 'Helium OUI 31' },                     // OUI 31
+  { prefix: '48000908/29', name: 'Helium OUI 32' },                     // OUI 32
+  { prefix: '48000910/29', name: 'Helium OUI 33' },                     // OUI 33
+  { prefix: '48000918/29', name: 'Helium OUI 34' },                     // OUI 34
+  { prefix: '48000920/29', name: 'Helium OUI 35' },                     // OUI 35
+  { prefix: '48000928/29', name: 'Helium OUI 36' },                     // OUI 36
+  { prefix: '48000930/29', name: 'Helium OUI 37' },                     // OUI 37
+  { prefix: '48000938/29', name: 'Helium OUI 38' },                     // OUI 38
+  { prefix: '48000940/29', name: 'Helium OUI 39' },                     // OUI 39
+  { prefix: '48000948/29', name: 'Helium OUI 40' },                     // OUI 40
+  { prefix: '48000950/29', name: 'Helium OUI 41' },                     // OUI 41
+  { prefix: '48000958/29', name: 'Helium OUI 42' },                     // OUI 42
+  { prefix: '48000960/29', name: 'Helium OUI 43' },                     // OUI 43
+  { prefix: '48000968/29', name: 'Helium OUI 44' },                     // OUI 44
+  { prefix: '48000970/29', name: 'Helium OUI 45' },                     // OUI 45
+  { prefix: '48000978/29', name: 'Helium OUI 46' },                     // OUI 46
+  { prefix: '48000980/29', name: 'Helium OUI 47' },                     // OUI 47
+  { prefix: '48000988/29', name: 'Helium OUI 48' },                     // OUI 48
+  { prefix: '48000990/29', name: 'Helium OUI 49' },                     // OUI 49
+  { prefix: '48000998/29', name: 'Helium OUI 50' },                     // OUI 50
+  { prefix: '480009A0/29', name: 'Helium OUI 51' },                     // OUI 51
+  { prefix: '480009A8/29', name: 'Helium OUI 52' },                     // OUI 52
+  { prefix: 'FC014C10/29', name: 'Helium OUI 60' },                     // OUI 60
+  { prefix: 'FC014C18/29', name: 'Helium OUI 61' },                     // OUI 61
+  { prefix: 'FC014C28/29', name: 'Helium OUI 62' },                     // OUI 62
+  { prefix: '16000000/7', name: 'Helium OUI 63' },                      // OUI 63
+  { prefix: '72000000/7', name: 'Helium OUI 64' },                      // OUI 64
+  { prefix: 'E0260000/15', name: 'Helium OUI 65' },                     // OUI 65
+  { prefix: '480009C0/29', name: 'Helium OUI 96' },                     // OUI 96
+  { prefix: '480009C8/29', name: 'Helium OUI 97' },                     // OUI 97
+  { prefix: '480009D0/29', name: 'Helium OUI 98' },                     // OUI 98
+  { prefix: '480009D8/29', name: 'Helium OUI 129' },                    // OUI 129
+  { prefix: '30000000/7', name: 'Helium OUI 162' },                     // OUI 162
+  { prefix: '78000000/29', name: 'Meteo Scientific' },                  // OUI 197
+  { prefix: '78000008/29', name: 'Helium OUI 228' },                    // OUI 228
+  { prefix: '78000010/29', name: 'Helium OUI 261' },                    // OUI 261
+  { prefix: '78000018/29', name: 'Helium OUI 294' },                    // OUI 294
+  { prefix: '78000020/29', name: 'WDRIoT'},                             // OUI 327
+  { prefix: '780001C8/29', name: 'WDRIoT'},                             // OUI 327
+  { prefix: '780001D0/28', name: 'WDRIoT'},                             // OUI 327
+  { prefix: '780001E0/28', name: 'WDRIoT'},                             // OUI 327
+  { prefix: '78000028/29', name: 'Heium OUI 360' },                     // OUI 360
+  { prefix: '78000030/29', name: 'Yosensi' },                           // OUI 393
+  { prefix: '78000038/29', name: 'Heium OUI 426' },                     // OUI 426
+  { prefix: 'FE005800/25', name: 'Helium OUI 459' },                    // OUI 459
+  { prefix: '78000040/29', name: 'LoneStar Tracking' },                 // OUI 492
+  { prefix: '78000048/29', name: 'Heium OUI 525' },                     // OUI 525
+  { prefix: '78000050/29', name: 'Heium OUI 558' },                     // OUI 558
+  { prefix: '78000058/29', name: 'Heium OUI 591' },                     // OUI 591
+  { prefix: 'FE008800/25', name: 'Helium OUI 624' },                    // OUI 624
+  { prefix: '78000060/29', name: 'Heium OUI 657' },                     // OUI 657
+  { prefix: 'FE001000/25', name: 'Helium OUI 658' },                    // OUI 658
+  { prefix: 'FE001080/25', name: 'Helium OUI 690' },                    // OUI 690
+  { prefix: 'E0040000/15', name: 'Helium OUI 691' },                    // OUI 691
+  { prefix: '78000068/29', name: 'Heium OUI 756' },                     // OUI 756
+  { prefix: 'FE008880/25', name: 'Helium OUI 789' },                    // OUI 789
+  { prefix: '78000070/29', name: 'Heium OUI 822' },                     // OUI 822
+  { prefix: '78000078/29', name: 'IoT-Wireless' },                      // OUI 823
+  { prefix: '78000080/29', name: 'Heium OUI 824' },                     // OUI 824
+  { prefix: 'FC01A400/22', name: 'Helium OUI 855' },                    // OUI 855
+  { prefix: '78000088/29', name: 'Nebra Ltd' },                         // OUI 921
+  { prefix: '78000090/29', name: 'Heium OUI 954' },                     // OUI 954
+  { prefix: 'FE004800/25', name: 'SkyNet IoT' },                        // OUI 987
+  { prefix: '78000098/29', name: 'Helium OUI 1020' },                   // OUI 1020
+  { prefix: '780000E0/29', name: 'Helium OUI 1020' },                   // OUI 1020
+  { prefix: '78000258/29', name: 'Helium OUI 1020' },                   // OUI 1020
+  { prefix: '78000260/27', name: 'Helium OUI 1020' },                   // OUI 1020
+  { prefix: '78000280/26', name: 'Helium OUI 1020' },                   // OUI 1020
+  { prefix: 'E04A0000/15', name: 'Helium OUI 1053' },                   // OUI 1053
+  { prefix: '12000000/7', name: 'Helium OUI 1086' },                    // OUI 1086
+  { prefix: 'FE00A000/25', name: 'Trackpac' },                          // OUI 1119
+  { prefix: '780000A0/29', name: 'Helium OUI 1152' },                   // OUI 1152
+  { prefix: '780000A8/29', name: 'Helium OUI 1153' },                   // OUI 1153
+  { prefix: '780000B0/29', name: 'Helium OUI 1185' },                   // OUI 1185
+  { prefix: '780000B8/29', name: 'Helium OUI 1218' },                   // OUI 1218
+  { prefix: '780000C0/29', name: 'Helium OUI 1251' },                   // OUI 1251
+  { prefix: '780000C8/29', name: 'Helium OUI 1284' },                   // OUI 1284
+  { prefix: '780000D0/29', name: 'Helium OUI 1317' },                   // OUI 1317
+  { prefix: '780000D8/29', name: 'Helium OUI 1350' },                   // OUI 1350
+  { prefix: 'FE003000/25', name: 'Helium OUI 1383' },                   // OUI 1383
+  { prefix: 'FC006800/22', name: 'Helium OUI 1416' },                   // OUI 1416
+  { prefix: 'FC014C00/29', name: 'Helium OUI 1449' },                   // OUI 1449
+  { prefix: '780000E8/29', name: 'Helium OUI 1482' },                   // OUI 1482
+  { prefix: 'FC00EC00/22', name: 'Helium OUI 1515' },                   // OUI 1515
+  { prefix: '780000F0/29', name: 'Helium OUI 1548' },                   // OUI 1548
+  { prefix: '780000F8/29', name: 'Helium OUI 1581' },                   // OUI 1581
+  { prefix: 'FC01D400/22', name: 'Helium OUI 1614' },                   // OUI 1614
+  { prefix: '78000100/29', name: 'Helium OUI 1647' },                   // OUI 1647
+  { prefix: '78000108/29', name: 'Helium OUI 1680' },                   // OUI 1680
+  { prefix: '78000110/29', name: 'Helium OUI 1714' },                   // OUI 1714
+  { prefix: 'FC01AC00/22', name: 'Helium OUI 1746' },                   // OUI 1746
+  { prefix: '78000118/29', name: 'Helium OUI 1779' },                   // OUI 1779
+  { prefix: '78000120/29', name: 'Helium OUI 1780' },                   // OUI 1780
+  { prefix: 'E0680000/15', name: 'Helium OUI 1812' },                   // OUI 1812
+  { prefix: '78000128/29', name: 'Helium OUI 1845' },                   // OUI 1845
+  { prefix: '78000130/29', name: 'Helium OUI 1845' },                   // OUI 1845
+  { prefix: '78000138/29', name: 'Helium OUI 1878' },                   // OUI 1878
+  { prefix: '78000140/26', name: 'Helium OUI 1911' },                   // OUI 1911
+  { prefix: '78000180/29', name: 'Helium OUI 1944' },                   // OUI 1944
+  { prefix: '78000188/29', name: 'Helium OUI 1977' },                   // OUI 1977
+  { prefix: 'FE00B800/25', name: 'Helium OUI 2010' },                   // OUI 2010
+  { prefix: '08000000/7', name: 'Helium OUI 2076' },                    // OUI 2076
+  { prefix: '78000190/29', name: 'Helium OUI 2109' },                   // OUI 2109
+  { prefix: '78000198/29', name: 'Helium OUI 2142' },                   // OUI 2142
+  { prefix: '780001A0/29', name: 'Helium OUI 2175' },                   // OUI 2175
+  { prefix: '780001A8/29', name: 'Helium OUI 2208' },                   // OUI 2208
+  { prefix: '780001B0/29', name: 'Helium OUI 2241' },                   // OUI 2241
+  { prefix: '780001B8/29', name: 'Ozone Space' },                       // OUI 2274
+  { prefix: '780001C0/29', name: 'Helium OUI 2307' },                   // OUI 2307
+  { prefix: 'FC000800/22', name: 'Helium OUI 2340' },                   // OUI 2340
+  { prefix: '780001F0/29', name: 'Helium OUI 2373' },                   // OUI 2373
+  { prefix: '780001F8/29', name: 'Helium OUI 2374' },                   // OUI 2374
+  { prefix: '78000200/29', name: 'Helium OUI 2406' },                   // OUI 2406
+  { prefix: '78000208/29', name: 'Helium OUI 2439' },                   // OUI 2439
+  { prefix: '78000210/29', name: 'Helium OUI 2440' },                   // OUI 2440
+  { prefix: '78000218/29', name: 'Helium OUI 2472' },                   // OUI 2472
+  { prefix: '78000220/29', name: 'Helium OUI 2505' },                   // OUI 2505
+  { prefix: '78000228/29', name: 'Helium OUI 2506' },                   // OUI 2506
+  { prefix: '78000230/29', name: 'Helium OUI 2538' },                   // OUI 2538
+  { prefix: '78000238/29', name: 'Helium OUI 2571' },                   // OUI 2571
+  { prefix: '78000240/29', name: 'Helium OUI 2604' },                   // OUI 2604
+  { prefix: '78000248/29', name: 'Helium OUI 2637' },                   // OUI 2637
+  { prefix: '0E000000/7', name: 'Helium OUI 2670' },                    // OUI 2670
+  { prefix: '78000250/29', name: 'Helium OUI 2703' },                   // OUI 2703
+  { prefix: '78000348/29', name: 'Helium OUI 2703' },                   // OUI 2703
+  { prefix: '780002C0/29', name: 'helium.dataMatters.io' },             // OUI 2736
+  { prefix: '78000388/29', name: 'Helium OUI 2736' },                   // OUI 2736 
+  { prefix: '78000390/29', name: 'Helium OUI 2736' },                   // OUI 2736 
+  { prefix: 'FC01E000/22', name: 'Helium OUI 2769' },                   // OUI 2769
+  { prefix: '780002C8/29', name: 'Helium OUI 2802' },                   // OUI 2802
+  { prefix: '780002D0/29', name: 'Helium OUI 2835' },                   // OUI 2835
+  { prefix: '780002D8/29', name: 'Helium OUI 2868' },                   // OUI 2868
+  { prefix: '780002E0/29', name: 'Helium OUI 2901' },                   // OUI 2901
+  { prefix: '780002E8/29', name: 'Helium OUI 2934' },                   // OUI 2934
+  { prefix: '780002F0/29', name: 'Helium OUI 2967' },                   // OUI 2967
+  { prefix: '780002F8/29', name: 'Helium OUI 3000' },                   // OUI 3000 
+  { prefix: '78000300/27', name: 'Helium OUI 3000' },                   // OUI 3000 
+  { prefix: '78000320/29', name: 'Helium OUI 3033' },                   // OUI 3033
+  { prefix: '04000000/7', name: 'Helium OUI 3066' },                    // OUI 3066
+  { prefix: '78000328/29', name: 'Helium OUI 3099' },                   // OUI 3099
+  { prefix: '78000378/29', name: 'Helium OUI 3099' },                   // OUI 3099
+  { prefix: '78000330/29', name: 'Helium OUI 3100' },                   // OUI 3100
+  { prefix: '78000338/29', name: 'Helium OUI 3132' },                   // OUI 3132
+  { prefix: '78000340/29', name: 'Helium OUI 3132' },                   // OUI 3132
+  { prefix: '78000350/29', name: 'Helium OUI 3165' },                   // OUI 3165
+  { prefix: '78000358/29', name: 'Helium OUI 3198' },                   // OUI 3198
+  { prefix: '78000360/29', name: 'Helium OUI 3231' },                   // OUI 3231
+  { prefix: '78000368/29', name: 'Helium OUI 3232' },                   // OUI 3232
+  { prefix: '78000370/29', name: 'Helium OUI 3233' },                   // OUI 3233
+  { prefix: 'FC01FC00/22', name: 'Helium OUI 3264' },                   // OUI 3264
+  { prefix: '78000380/29', name: 'Helium OUI 3297' },                   // OUI 3297
+  { prefix: '78000398/29', name: 'Helium OUI 3330' },                   // OUI 3330
+  { prefix: '780003A0/29', name: 'Helium OUI 3363' },                   // OUI 3363
+  { prefix: '780003A8/29', name: 'Helium OUI 3396' },                   // OUI 3396
+  { prefix: '780003B0/29', name: 'Helium OUI 3429' },                   // OUI 3429
+  { prefix: '780003B8/29', name: 'Helium OUI 3462' },                   // OUI 3462
+  { prefix: '780003C0/29', name: 'Helium OUI 3495' },                   // OUI 3495
 ];
 
 let operatorPrefixes: OperatorPrefix[] = [];
