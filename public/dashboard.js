@@ -610,7 +610,7 @@ async function loadDeviceBreakdown() {
           <div class="device-detail-item ${isOwned ? 'mine' : ''}" onclick="window.location.href='device.html?addr=${d.dev_addr}'">
             <div class="device-detail-main">
               <span class="device-addr ${isOwned ? 'text-blue-400' : ''}">${d.dev_addr}</span>
-              ${d.device_name || deviceMetadataMap[d.dev_addr]?.device_name ? `<span class="text-xs text-white/50 truncate max-w-[140px]" title="${d.device_name || deviceMetadataMap[d.dev_addr]?.device_name}">${d.device_name || deviceMetadataMap[d.dev_addr]?.device_name}</span>` : ''}
+              ${(() => { const meta = deviceMetadataMap[d.dev_addr]; const name = d.device_name || meta?.device_name; const eui = meta?.dev_eui; return (name || eui) ? `<span class="text-xs text-white/50 truncate max-w-[200px]" title="${[name, eui].filter(Boolean).join(' | ')}">${name ? name : ''}${name && eui ? ' ' : ''}${eui ? '<span class="font-mono text-white/30">' + eui + '</span>' : ''}</span>` : ''; })()}
               <span class="device-operator" style="color: ${opColor}">${d.operator || '?'}</span>
               <span class="device-sf">${sfDisplay}</span>
               <span class="device-interval">${intervalDisplay}</span>

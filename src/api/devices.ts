@@ -56,7 +56,7 @@ export async function deviceRoutes(fastify: FastifyInstance): Promise<void> {
       profile.application_name = metadata.application_name;
       profile.device_profile_name = metadata.device_profile_name;
     }
-    return { profile };
+    return { profile, last_payload: metadata?.last_payload ?? null };
   });
 
   // Get device FCnt timeline

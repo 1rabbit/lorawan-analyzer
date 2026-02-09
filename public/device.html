@@ -103,6 +103,26 @@
           </div>
         </div>
 
+        <!-- Last Frame -->
+        <div id="last-frame-section" class="mb-6 hidden">
+          <div class="bg-white/5 border border-white/10 rounded-lg p-4">
+            <h3 class="text-sm font-semibold text-white/80 mb-3">Last Frame</h3>
+            <div class="flex items-center gap-6 text-xs text-white/50 mb-3">
+              <span>FCnt <span id="lf-fcnt" class="text-white/80 font-mono">-</span></span>
+              <span>FPort <span id="lf-fport" class="text-white/80 font-mono">-</span></span>
+              <span>Received <span id="lf-time" class="text-white/80">-</span></span>
+            </div>
+            <div class="mb-2">
+              <div class="text-xs text-white/40 mb-1">Raw (hex)</div>
+              <div id="lf-raw" class="font-mono text-xs text-orange-300/80 bg-black/30 rounded px-3 py-2 break-all">-</div>
+            </div>
+            <div id="lf-decoded-section" class="hidden">
+              <div class="text-xs text-white/40 mb-1">Decoded</div>
+              <pre id="lf-decoded" class="font-mono text-xs text-green-300/80 bg-black/30 rounded px-3 py-2 overflow-x-auto max-h-48">-</pre>
+            </div>
+          </div>
+        </div>
+
         <!-- Charts Row 1: Signal -->
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
           <div class="chart-card">

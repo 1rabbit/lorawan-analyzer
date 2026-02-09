@@ -132,6 +132,7 @@ async function loadDeviceData() {
     ]);
 
     const profile = profileRes.profile;
+    const lastPayload = profileRes.last_payload;
     if (!profile) {
       document.getElementById('loading').classList.add('hidden');
       document.getElementById('error').classList.remove('hidden');
@@ -168,6 +169,32 @@ async function loadDeviceData() {
     }
     if (profile.device_profile_name) {
       document.getElementById('device-profile-type').textContent = profile.device_profile_name;
+    }
+
+    // Display last frame if available
+    if (lastPayload) {
+      const section = document.getElementById('last-frame-section');
+      section.classList.remove('hidden');
+      document.getElementById('lf-fcnt').textContent = lastPayload.f_cnt ?? '-';
+      document.getElementById('lf-fport').textContent = lastPayload.f_port ?? '-';
+      document.getElementById('lf-time').textContent = lastPayload.timestamp ? formatDateTime(lastPayload.timestamp) : '-';
+
+      // Convert base64 to hex
+      if (lastPayload.raw_base64) {
+        try {
+          const raw = atob(lastPayload.raw_base64);
+          const hex = Array.from(raw, c => c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase()).join(' ');
+          document.getElementById('lf-raw').textContent = hex;
+        } catch {
+          document.getElementById('lf-raw').textContent = lastPayload.raw_base64;
+        }
+      }
+
+      // Show decoded JSON if available
+      if (lastPayload.decoded && Object.keys(lastPayload.decoded).length > 0) {
+        document.getElementById('lf-decoded-section').classList.remove('hidden');
+        document.getElementById('lf-decoded').textContent = JSON.stringify(lastPayload.decoded, null, 2);
+      }
     }
 
     // Calculate stats - use fcnt timeline for accurate interval (accounts for lost packets)

@@ -200,6 +200,12 @@ L'analyzer fonctionne normalement sans ces options. Les metadata sont un enrichi
 - Le mapping se met a jour automatiquement au prochain uplink apres un re-join
 - Pas de TTL sur la table device_metadata (les anciennes entrees sont ecrasees par ReplacingMergeTree)
 
+### Derniere trame (Last Frame)
+- Les messages application MQTT contiennent le payload dechiffre (`data` en base64) et decode (`object` en JSON si codec configure)
+- Le dernier payload est stocke en memoire uniquement (pas en DB) dans le cache metadata
+- Affiche dans la page device detail : FCnt, FPort, timestamp, hex brut, et JSON decode
+- Se perd au redemarrage (se re-peuple au prochain uplink du device)
+
 ### Performance
 - Cache in-memory : lookup O(1) par DevAddr ou DevEUI
 - Pas d'impact sur le pipeline de paquets existant (enrichissement cote API, pas cote ingestion)

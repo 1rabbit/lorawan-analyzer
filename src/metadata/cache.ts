@@ -20,6 +20,12 @@ export class DeviceMetadataCache {
   }
 
   async upsert(metadata: DeviceMetadata): Promise<void> {
+    // Preserve existing last_payload if new metadata doesn't have one
+    const existing = this.byDevAddr.get(metadata.dev_addr);
+    if (!metadata.last_payload && existing?.last_payload) {
+      metadata.last_payload = existing.last_payload;
+    }
+
     this.byDevAddr.set(metadata.dev_addr, metadata);
     if (metadata.dev_eui) {
       this.byDevEui.set(metadata.dev_eui, metadata);

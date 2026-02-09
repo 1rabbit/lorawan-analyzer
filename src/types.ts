@@ -186,6 +186,14 @@ export interface TreeDevice {
   device_name?: string;
 }
 
+export interface LastPayload {
+  f_cnt: number;
+  f_port: number;
+  raw_base64: string;
+  decoded: Record<string, unknown> | null;
+  timestamp: Date;
+}
+
 export interface DeviceMetadata {
   dev_addr: string;
   dev_eui: string;
@@ -193,6 +201,7 @@ export interface DeviceMetadata {
   application_name: string;
   device_profile_name: string;
   last_seen: Date;
+  last_payload?: LastPayload;
 }
 
 export interface FCntTimelinePoint {

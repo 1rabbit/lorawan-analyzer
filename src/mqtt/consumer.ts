@@ -1,5 +1,5 @@
 import mqtt, { MqttClient, IClientOptions } from 'mqtt';
-import type { MqttConfig, ParsedPacket, DeviceMetadata } from '../types.js';
+import type { MqttConfig, ParsedPacket, DeviceMetadata, LastPayload } from '../types.js';
 import { parseUplinkFrame, parseProtobufUplink } from '../parser/uplink.js';
 import { parseDownlinkFrame, parseProtobufDownlink } from '../parser/downlink.js';
 import { parseTxAck, parseProtobufTxAck } from '../parser/txack.js';
@@ -179,6 +179,18 @@ function handleApplicationMessage(topic: string, message: Buffer): void {
     const devAddr = data.devAddr || null;
     if (!devAddr) return;
 
+    // Extract last payload if present (uplink events)
+    let lastPayload: LastPayload | undefined;
+    if (data.data || data.object) {
+      lastPayload = {
+        f_cnt: data.fCnt ?? 0,
+        f_port: data.fPort ?? 0,
+        raw_base64: data.data || '',
+        decoded: data.object || null,
+        timestamp: new Date(),
+      };
+    }
+
     const metadata: DeviceMetadata = {
       dev_addr: devAddr.toUpperCase(),
       dev_eui: (info.devEui || '').toUpperCase(),
@@ -186,6 +198,7 @@ function handleApplicationMessage(topic: string, message: Buffer): void {
       application_name: info.applicationName || '',
       device_profile_name: info.deviceProfileName || '',
       last_seen: new Date(),
+      last_payload: lastPayload,
     };
 
     for (const handler of metadataHandlers) {
