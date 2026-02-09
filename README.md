@@ -2,6 +2,10 @@
 
 Real-time LoRaWAN traffic analyzer for ChirpStack. Captures uplinks, downlinks, join requests, and TX acknowledgements via MQTT, stores everything in ClickHouse, and serves a web dashboard for monitoring and analysis.
 
+![Dashboard](assets/dashboard.png)
+
+![Live Feed](assets/live.png)
+
 ## Features
 
 - **Dashboard** -- gateway tabs, operator/device tree, traffic charts, channel/SF distribution, duty cycle, device breakdown
