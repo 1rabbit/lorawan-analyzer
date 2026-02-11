@@ -284,10 +284,10 @@ const BUILTIN_OPERATORS: Array<{ prefix: string; name: string }> = [
   { prefix: '78000280/26', name: 'Helium OUI 1020' },                   // OUI 1020
   { prefix: 'E04A0000/15', name: 'Helium OUI 1053' },                   // OUI 1053
   { prefix: '12000000/7', name: 'Helium OUI 1086' },                    // OUI 1086
-  { prefix: 'FE00A000/25', name: 'Trackpac' },                          // OUI 1119
+  { prefix: 'FE00A000/25', name: 'Trackpac Ltd' },                      // OUI 1119
   { prefix: '780000A0/29', name: 'Helium OUI 1152' },                   // OUI 1152
   { prefix: '780000A8/29', name: 'Helium OUI 1153' },                   // OUI 1153
-  { prefix: '780000B0/29', name: 'Helium OUI 1185' },                   // OUI 1185
+  { prefix: '780000B0/29', name: 'Sattrack.co.uk' },                    // OUI 1185
   { prefix: '780000B8/29', name: 'Helium OUI 1218' },                   // OUI 1218
   { prefix: '780000C0/29', name: 'Helium OUI 1251' },                   // OUI 1251
   { prefix: '780000C8/29', name: 'Helium OUI 1284' },                   // OUI 1284
@@ -316,7 +316,7 @@ const BUILTIN_OPERATORS: Array<{ prefix: string; name: string }> = [
   { prefix: '78000188/29', name: 'Helium OUI 1977' },                   // OUI 1977
   { prefix: 'FE00B800/25', name: 'Helium OUI 2010' },                   // OUI 2010
   { prefix: '08000000/7', name: 'Helium OUI 2076' },                    // OUI 2076
-  { prefix: '78000190/29', name: 'Helium OUI 2109' },                   // OUI 2109
+  { prefix: '78000190/29', name: 'BUOY.fish' },                         // OUI 2109
   { prefix: '78000198/29', name: 'Helium OUI 2142' },                   // OUI 2142
   { prefix: '780001A0/29', name: 'Helium OUI 2175' },                   // OUI 2175
   { prefix: '780001A8/29', name: 'Helium OUI 2208' },                   // OUI 2208
@@ -368,7 +368,7 @@ const BUILTIN_OPERATORS: Array<{ prefix: string; name: string }> = [
   { prefix: '78000398/29', name: 'Helium OUI 3330' },                   // OUI 3330
   { prefix: '780003A0/29', name: 'Helium OUI 3363' },                   // OUI 3363
   { prefix: '780003A8/29', name: 'Helium OUI 3396' },                   // OUI 3396
-  { prefix: '780003B0/29', name: 'Helium OUI 3429' },                   // OUI 3429
+  { prefix: '780003B0/29', name: 'SmartFlows' },                        // OUI 3429
   { prefix: '780003B8/29', name: 'Helium OUI 3462' },                   // OUI 3462
   { prefix: '780003C0/29', name: 'Helium OUI 3495' },                   // OUI 3495
 ];
