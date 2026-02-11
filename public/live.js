@@ -233,7 +233,9 @@ function shouldShowDevice(devAddr) {
 
 function getOperatorStyle(operator) {
   const color = operatorColors[operator];
-  return color ? `style="color: ${color}"` : 'class="op-unknown"';
+  if (color) return `style="color: ${color}"`;
+  if (operator === 'Unknown') return 'class="op-unknown"';
+  return `style="color: rgba(255, 255, 255, 0.85)"`;
 }
 
 // Gateway Management

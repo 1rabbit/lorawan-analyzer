@@ -90,7 +90,8 @@ async function loadOperatorColors() {
 }
 
 function getOperatorColor(operator) {
-  return operatorColors[operator] || 'rgba(255, 255, 255, 0.4)';
+  if (operatorColors[operator]) return operatorColors[operator];
+  return operator === 'Unknown' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 255, 255, 0.85)';
 }
 
 function isMyDevice(addr) {
