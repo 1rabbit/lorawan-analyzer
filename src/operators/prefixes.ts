@@ -8,6 +8,7 @@ export interface OperatorPrefix {
   bits: number;
   name: string;
   priority: number;
+  color?: string;
 }
 
 // Parse a prefix string like "26000000/7" into prefix and mask
@@ -20,7 +21,7 @@ function parsePrefix(prefixStr: string): { prefix: number; mask: number; bits: n
 }
 
 // Built-in operator database from LoRa Alliance NetID assignments
-const BUILTIN_OPERATORS: Array<{ prefix: string; name: string }> = [
+const BUILTIN_OPERATORS: Array<{ prefix: string; name: string; color?: string }> = [
   // ==========================================
   // Type 0 NetIDs (6-bit NwkID) - /7 prefix
   // ==========================================
@@ -375,13 +376,13 @@ const BUILTIN_OPERATORS: Array<{ prefix: string; name: string }> = [
 
 let operatorPrefixes: OperatorPrefix[] = [];
 
-export function initOperatorPrefixes(customOperators: Array<{ prefix: string | string[]; name: string; priority?: number }> = []): void {
+export function initOperatorPrefixes(customOperators: Array<{ prefix: string | string[]; name: string; priority?: number; color?: string }> = []): void {
   operatorPrefixes = [];
 
   // Add built-in operators with priority 0
   for (const op of BUILTIN_OPERATORS) {
     const { prefix, mask, bits } = parsePrefix(op.prefix);
-    operatorPrefixes.push({ prefix, mask, bits, name: op.name, priority: 0 });
+    operatorPrefixes.push({ prefix, mask, bits, name: op.name, priority: 0, color: op.color });
   }
 
   // Add custom operators with higher priority (default 100)
@@ -389,7 +390,7 @@ export function initOperatorPrefixes(customOperators: Array<{ prefix: string | s
     const prefixes = Array.isArray(op.prefix) ? op.prefix : [op.prefix];
     for (const prefixStr of prefixes) {
       const { prefix, mask, bits } = parsePrefix(prefixStr);
-      operatorPrefixes.push({ prefix, mask, bits, name: op.name, priority: op.priority ?? 100 });
+      operatorPrefixes.push({ prefix, mask, bits, name: op.name, priority: op.priority ?? 100, color: op.color });
     }
   }
 
@@ -402,4 +403,18 @@ export function initOperatorPrefixes(customOperators: Array<{ prefix: string | s
 
 export function getOperatorPrefixes(): OperatorPrefix[] {
   return operatorPrefixes;
+}
+
+// Returns a map of operator name -> color for all operators that have a color defined.
+// Higher-priority operators (custom/config) override built-in colors for the same name.
+export function getOperatorColorMap(): Record<string, string> {
+  const colors: Record<string, string> = {};
+  // Iterate in reverse priority order so higher-priority entries override
+  for (let i = operatorPrefixes.length - 1; i >= 0; i--) {
+    const op = operatorPrefixes[i];
+    if (op.color) {
+      colors[op.name] = op.color;
+    }
+  }
+  return colors;
 }
