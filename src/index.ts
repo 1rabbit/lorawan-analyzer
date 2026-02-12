@@ -2,7 +2,7 @@ import { loadConfig } from './config.js';
 import { initClickHouse, closeClickHouse } from './db/index.js';
 import { runMigrations } from './db/migrations.js';
 import { insertPacket, upsertGateway, getCustomOperators } from './db/queries.js';
-import { connectMqtt, onPacket, disconnectMqtt } from './mqtt/consumer.js';
+import { connectMqtt, onPacket, onGatewayLocation, disconnectMqtt } from './mqtt/consumer.js';
 import { initOperatorPrefixes } from './operators/prefixes.js';
 import { startApi } from './api/index.js';
 import { SessionTracker } from './session/tracker.js';
@@ -56,7 +56,7 @@ async function main(): Promise<void> {
   connectMqtt(config.mqtt);
 
   // Handle incoming packets
-  onPacket(async (packet: ParsedPacket) => {
+  onPacket(async (packet: ParsedPacket, gatewayLocation) => {
     try {
       // Enrich packet with session tracking
       const sessionResult = sessionTracker.processPacket(packet);
@@ -70,8 +70,8 @@ async function main(): Promise<void> {
       // Insert packet into database
       await insertPacket(packet);
 
-      // Update gateway
-      await upsertGateway(packet.gateway_id);
+      // Update gateway (with location and name if available from uplink metadata)
+      await upsertGateway(packet.gateway_id, gatewayLocation?.name ?? null, gatewayLocation);
 
       // Log packet info
       let info: string;
@@ -102,6 +102,15 @@ async function main(): Promise<void> {
       console.log(logLine);
     } catch (err) {
       console.error('Error processing packet:', err);
+    }
+  });
+
+  // Handle gateway location updates from application-level MQTT messages
+  onGatewayLocation(async (gatewayId, location) => {
+    try {
+      await upsertGateway(gatewayId, location.name ?? null, location);
+    } catch (err) {
+      console.error('Error updating gateway location:', err);
     }
   });
 

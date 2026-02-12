@@ -149,6 +149,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     getOperatorStyle,
   });
 
+  // Flush buffered packets when user scrolls back to top
+  onPacketFeedResume(flushPendingEntries);
+
   loadGateways();
   loadRecentPackets(selectedGateway);
   connectWebSocket(selectedGateway);
@@ -258,12 +261,16 @@ async function loadGateways() {
 
 function renderGatewayTabs() {
   const container = document.getElementById('gateway-tabs');
-  container.innerHTML = gateways.map(gw => `
-    <button class="gateway-tab px-3 py-1 rounded text-xs" data-gateway="${gw.gateway_id}" title="${gw.gateway_id}">
-      ${gw.gateway_id}
+  container.innerHTML = gateways.map(gw => {
+    const label = gw.name || gw.gateway_id;
+    const title = gw.name ? `${gw.name} (${gw.gateway_id})` : gw.gateway_id;
+    return `
+    <button class="gateway-tab px-3 py-1 rounded text-xs" data-gateway="${gw.gateway_id}" title="${title}">
+      ${label}
       <span class="text-gray-500 ml-1">${formatNumber(gw.packet_count)}</span>
     </button>
-  `).join('');
+  `;
+  }).join('');
 
   container.querySelectorAll('.gateway-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -372,6 +379,7 @@ async function loadRecentPackets(gatewayId = null) {
       const livePacket = {
         timestamp: parseUTCTimestamp(p.timestamp).getTime(),
         gateway_id: p.gateway_id,
+        gateway_name: p.gateway_name || null,
         type: p.packet_type,
         dev_addr: p.dev_addr,
         f_cnt: p.f_cnt,
@@ -451,8 +459,24 @@ function connectWebSocket(gatewayId = null) {
   ws.onclose = () => setTimeout(() => connectWebSocket(selectedGateway), 5000);
 }
 
+let pendingEntries = [];
+
 function addLiveEntry(packet) {
+  if (isPacketFeedScrolled()) {
+    // Buffer while user is scrolled down
+    pendingEntries.push(packet);
+    return;
+  }
   liveEntries.unshift(packet);
+  if (liveEntries.length > 500) liveEntries = liveEntries.slice(0, 500);
+  setPacketFeedData(liveEntries);
+}
+
+function flushPendingEntries() {
+  if (pendingEntries.length === 0) return;
+  // Prepend buffered entries (newest first)
+  liveEntries = pendingEntries.reverse().concat(liveEntries);
+  pendingEntries = [];
   if (liveEntries.length > 500) liveEntries = liveEntries.slice(0, 500);
   setPacketFeedData(liveEntries);
 }

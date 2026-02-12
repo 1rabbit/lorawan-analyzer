@@ -7,6 +7,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10/ol.css">
+  <script src="https://cdn.jsdelivr.net/npm/ol@10/dist/ol.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="text-gray-100 min-h-screen">
@@ -104,20 +106,27 @@
               <div id="stat-ack-fail" class="value">-</div>
             </div>
           </div>
-
+          
           <!-- Charts Row -->
-          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+  
+            <!-- Gateway Map -->
+            <div id="gateway-map-card" class="chart-card">
+              <h3 class="chart-title">Gateway Map</h3>
+              <div id="gateway-map" class="h-80"></div>
+              <div id="gateway-map-popup" class="ol-popup"></div>
+            </div>
             <!-- Traffic Chart -->
             <div class="chart-card">
               <h3 class="chart-title">Traffic Over Time</h3>
-              <div class="h-64">
+              <div class="h-80">
                 <canvas id="traffic-chart"></canvas>
               </div>
             </div>
             <!-- Operator Chart -->
             <div class="chart-card">
               <h3 class="chart-title">By Operator</h3>
-              <div class="h-64">
+              <div class="h-80">
                 <canvas id="operator-chart"></canvas>
               </div>
             </div>
@@ -151,6 +160,20 @@
             </div>
           </div>
 
+          <!-- Gateway Info -->
+          <div id="gateway-info-panel" class="panel mb-6 hidden">
+            <div class="flex flex-col md:flex-row gap-4 justify-between items-center">
+              <div class="flex items-center gap-2">
+                <span class="text-white/50 text-xs">NAME:</span>
+                <span id="gateway-info-name" class="text-xs select-all"></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-white/50 text-xs">ID:</span>
+                <span id="gateway-info-id" class="font-mono text-white/80 text-xs select-all"></span>
+              </div>
+            </div>
+          </div>
+
           <!-- Devices List -->
           <div class="panel">
             <h3 class="panel-title">Devices</h3>
@@ -179,6 +202,7 @@
   </div>
 
   <script src="utils.js"></script>
+  <script src="gateway-map.js"></script>
   <script src="dashboard.js"></script>
 </body>
 </html>

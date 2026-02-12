@@ -71,6 +71,19 @@ export async function runMigrations(): Promise<void> {
   });
   console.log('  Created gateways table');
 
+  // Add latitude/longitude columns to gateways if they don't exist
+  try {
+    await client.command({
+      query: `ALTER TABLE gateways ADD COLUMN IF NOT EXISTS latitude Nullable(Float64)`,
+    });
+    await client.command({
+      query: `ALTER TABLE gateways ADD COLUMN IF NOT EXISTS longitude Nullable(Float64)`,
+    });
+    console.log('  Added latitude/longitude columns to gateways table');
+  } catch {
+    // Columns might already exist - ignore
+  }
+
   // Create custom_operators table
   await client.command({
     query: `

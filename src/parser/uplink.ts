@@ -21,6 +21,8 @@ interface ChirpStackUplinkFrame {
     rssi?: number;
     snr?: number;
     time?: string;
+    location?: { latitude: number; longitude: number; altitude?: number; name?: string };
+    metadata?: Record<string, string>;
   };
 }
 
@@ -296,14 +298,88 @@ function decodeCodeRate(value: number): string {
   return codeRates[value] ?? '4/5';
 }
 
-// UplinkRxInfo message:
+// common.Location message:
+//   Field 1: latitude (double)
+//   Field 2: longitude (double)
+//   Field 3: altitude (double)
+function decodeLocation(data: Buffer): { latitude: number; longitude: number; altitude?: number } | null {
+  const loc: { latitude: number; longitude: number; altitude?: number } = { latitude: 0, longitude: 0 };
+  let offset = 0;
+
+  while (offset < data.length) {
+    const [tag, newOffset] = readVarint(data, offset);
+    offset = newOffset;
+
+    const fieldNumber = tag >> 3;
+    const wireType = tag & 0x07;
+
+    if (wireType === 1) { // 64-bit fixed (double)
+      const value = data.readDoubleLE(offset);
+      offset += 8;
+      switch (fieldNumber) {
+        case 1: loc.latitude = value; break;
+        case 2: loc.longitude = value; break;
+        case 3: loc.altitude = value; break;
+      }
+    } else if (wireType === 0) {
+      const [, nextOffset] = readVarint(data, offset);
+      offset = nextOffset;
+    } else if (wireType === 2) {
+      const [length, lenOffset] = readVarint(data, offset);
+      offset = lenOffset + length;
+    } else if (wireType === 5) {
+      offset += 4;
+    } else {
+      break;
+    }
+  }
+
+  // Only return if we got valid coordinates
+  if (loc.latitude === 0 && loc.longitude === 0) return null;
+  return loc;
+}
+
+// Decode a protobuf map<string,string> entry (field 1 = key, field 2 = value)
+function decodeMapEntry(data: Buffer): [string, string] | null {
+  let key = '';
+  let value = '';
+  let offset = 0;
+
+  while (offset < data.length) {
+    const [tag, newOffset] = readVarint(data, offset);
+    offset = newOffset;
+    const fieldNumber = tag >> 3;
+    const wireType = tag & 0x07;
+
+    if (wireType === 2) {
+      const [length, lenOffset] = readVarint(data, offset);
+      offset = lenOffset;
+      const str = data.subarray(offset, offset + length).toString('utf-8');
+      offset += length;
+      if (fieldNumber === 1) key = str;
+      else if (fieldNumber === 2) value = str;
+    } else if (wireType === 0) {
+      const [, nextOffset] = readVarint(data, offset);
+      offset = nextOffset;
+    } else {
+      break;
+    }
+  }
+
+  return key ? [key, value] : null;
+}
+
+// UplinkRxInfo message (from gw.proto):
 //   Field 1: gatewayId (string)
 //   Field 2: uplinkId (uint32)
 //   Field 3: gwTime (Timestamp)
 //   Field 6: rssi (int32) - negative values use 10-byte varint encoding
 //   Field 7: snr (float)
+//   Field 12: location (common.Location)
+//   Field 15: metadata (map<string,string>) - Helium uses gateway_lat/gateway_long here
 function decodeRxInfo(data: Buffer): ChirpStackUplinkFrame['rxInfo'] {
   const rxInfo: ChirpStackUplinkFrame['rxInfo'] = {};
+  const metadata: Record<string, string> = {};
   let offset = 0;
 
   while (offset < data.length) {
@@ -315,14 +391,11 @@ function decodeRxInfo(data: Buffer): ChirpStackUplinkFrame['rxInfo'] {
 
     switch (wireType) {
       case 0: { // Varint
-        // Use BigInt for RSSI since negative int32 uses 10-byte encoding
+        // Use BigInt for ALL varints to safely handle negative int32 (10-byte encoding)
+        const [value, nextOffset] = readVarintBigInt(data, offset);
+        offset = nextOffset;
         if (fieldNumber === 6) {
-          const [value, nextOffset] = readVarintBigInt(data, offset);
-          offset = nextOffset;
           rxInfo.rssi = bigIntToSigned32(value);
-        } else {
-          const [, nextOffset] = readVarint(data, offset);
-          offset = nextOffset;
         }
         break;
       }
@@ -334,6 +407,12 @@ function decodeRxInfo(data: Buffer): ChirpStackUplinkFrame['rxInfo'] {
 
         if (fieldNumber === 1) { // gateway_id (string)
           rxInfo.gatewayId = fieldData.toString('utf-8');
+        } else if (fieldNumber === 12) { // location
+          const loc = decodeLocation(fieldData);
+          if (loc) rxInfo.location = loc;
+        } else if (fieldNumber === 15) { // metadata map entry
+          const entry = decodeMapEntry(fieldData);
+          if (entry) metadata[entry[0]] = entry[1];
         }
         break;
       }
@@ -351,6 +430,25 @@ function decodeRxInfo(data: Buffer): ChirpStackUplinkFrame['rxInfo'] {
       default:
         return rxInfo;
     }
+  }
+
+  // Store metadata if any entries were found
+  if (Object.keys(metadata).length > 0) {
+    rxInfo.metadata = metadata;
+  }
+
+  // Fallback: if no location from field 9, try Helium metadata
+  if (!rxInfo.location && metadata.gateway_lat && metadata.gateway_long) {
+    const lat = parseFloat(metadata.gateway_lat);
+    const lng = parseFloat(metadata.gateway_long);
+    if (!isNaN(lat) && !isNaN(lng) && !(lat === 0 && lng === 0)) {
+      rxInfo.location = { latitude: lat, longitude: lng };
+    }
+  }
+
+  // Attach gateway_name from metadata to location if available
+  if (rxInfo.location && metadata.gateway_name) {
+    rxInfo.location.name = metadata.gateway_name;
   }
 
   return rxInfo;
@@ -395,4 +493,84 @@ function toSigned32(value: number): number {
 function bigIntToSigned32(value: bigint): number {
   // Truncate to 32 bits and interpret as signed
   return Number(BigInt.asIntN(32, value));
+}
+
+export type GatewayLocation = { latitude: number; longitude: number; altitude?: number; name?: string };
+
+// Try to extract location from a single rxInfo entry (object)
+function extractLocationFromRxInfoEntry(entry: Record<string, unknown>): GatewayLocation | null {
+  // Try location field first
+  const loc = entry.location as Record<string, unknown> | undefined;
+  if (loc) {
+    const lat = Number(loc.latitude);
+    const lng = Number(loc.longitude);
+    if (!isNaN(lat) && !isNaN(lng) && !(lat === 0 && lng === 0)) {
+      const result: GatewayLocation = { latitude: lat, longitude: lng };
+      if (loc.altitude !== undefined && loc.altitude !== null) {
+        result.altitude = Number(loc.altitude);
+      }
+      return result;
+    }
+  }
+
+  // Fallback: Helium metadata (gateway_lat / gateway_long / gateway_name)
+  const meta = entry.metadata as Record<string, string> | undefined;
+  if (meta?.gateway_lat && meta?.gateway_long) {
+    const lat = parseFloat(meta.gateway_lat);
+    const lng = parseFloat(meta.gateway_long);
+    if (!isNaN(lat) && !isNaN(lng) && !(lat === 0 && lng === 0)) {
+      const result: GatewayLocation = { latitude: lat, longitude: lng };
+      if (meta.gateway_name) result.name = meta.gateway_name;
+      return result;
+    }
+  }
+
+  return null;
+}
+
+// Extract gateway locations from a JSON uplink frame
+// Returns a map of gateway_id -> location for all gateways with coordinates
+export function extractGatewayLocationsFromJSON(frame: Record<string, unknown>): Map<string, GatewayLocation> {
+  const locations = new Map<string, GatewayLocation>();
+  const rxInfo = frame.rxInfo;
+  if (!rxInfo) return locations;
+
+  // rxInfo can be a single object or an array
+  const entries = Array.isArray(rxInfo) ? rxInfo : [rxInfo];
+  for (const entry of entries) {
+    const e = entry as Record<string, unknown>;
+    const gwId = e.gatewayId as string | undefined;
+    if (!gwId || locations.has(gwId)) continue;
+    const loc = extractLocationFromRxInfoEntry(e);
+    if (loc) locations.set(gwId, loc);
+  }
+
+  return locations;
+}
+
+// Extract gateway location from a JSON uplink frame (single gateway, for protobuf gateway topic)
+export function extractGatewayLocationFromJSON(frame: Record<string, unknown>): GatewayLocation | null {
+  const rxInfo = frame.rxInfo;
+  if (!rxInfo) return null;
+
+  // If array, find first entry with location
+  if (Array.isArray(rxInfo)) {
+    for (const entry of rxInfo) {
+      const loc = extractLocationFromRxInfoEntry(entry as Record<string, unknown>);
+      if (loc) return loc;
+    }
+    return null;
+  }
+
+  return extractLocationFromRxInfoEntry(rxInfo as Record<string, unknown>);
+}
+
+// Extract gateway location from a protobuf uplink frame
+export function extractGatewayLocationFromProtobuf(data: Buffer): GatewayLocation | null {
+  try {
+    const frame = decodeUplinkFrameProtobuf(data);
+    return frame.rxInfo?.location ?? null;
+  } catch {
+    return null;
+  }
 }

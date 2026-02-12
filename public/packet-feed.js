@@ -14,6 +14,7 @@
   let typeFilter = { up: true, join: true, down: true, ack: true };
   let searchText = '';
   let autoScroll = true;
+  let onResumeCallback = null;
 
   // Options set by initPacketFeed
   let opts = {
@@ -71,6 +72,7 @@
       p.join_eui,
       p.operator,
       p.gateway_id,
+      p.gateway_name,
       p.tx_status,
       p.f_cnt?.toString(),
       p.data_rate,
@@ -106,6 +108,7 @@
 
   function renderHeader() {
     const gwCol = opts.showGateway ? '<span class="gateway-col" style="width:130px">Gateway</span>' : '';
+    const gwNameCol = opts.showGateway ? '<span class="gateway-col" style="width:140px">Name</span>' : '';
     const addrCol = opts.showAddr ? '<span style="width:130px">Addr / DevEUI</span>' : '';
     const operatorCol = opts.showOperator ? '<span style="width:120px">Operator</span>' : '';
 
@@ -123,6 +126,7 @@
       <span style="width:40px">Size</span>
       <span style="width:64px">Airtime</span>
       ${gwCol}
+      ${gwNameCol}
     `;
   }
 
@@ -174,7 +178,8 @@
     }
     const typeClass = isJoin ? 'join' : isDown ? 'downlink' : isTxAck ? 'ack' : 'up';
 
-    const gwCol = opts.showGateway ? `<span class="gw gateway-col">${p.gateway_id || ''}</span>` : '';
+    const gwCol = opts.showGateway ? `<span class="gw gateway-col" style="width:130px">${p.gateway_id || ''}</span>` : '';
+    const gwNameCol = opts.showGateway ? `<span class="gw gateway-col" style="width:140px">${p.gateway_name || '-'}</span>` : '';
     const operatorStyle = opts.getOperatorStyle ? opts.getOperatorStyle(p.operator) : 'class="op-unknown"';
 
     if (isTxAck) {
@@ -196,6 +201,7 @@
           <span class="size">-</span>
           <span class="airtime">-</span>
           ${gwCol}
+          ${gwNameCol}
         </div>
       `;
     }
@@ -220,6 +226,7 @@
           <span class="size"></span>
           <span class="airtime">${formatAirtime(p.airtime_ms)}</span>
           ${gwCol}
+          ${gwNameCol}
         </div>
       `;
     }
@@ -243,6 +250,7 @@
           <span class="size">${p.payload_size}B</span>
           <span class="airtime">${formatAirtime(p.airtime_ms)}</span>
           ${gwCol}
+          ${gwNameCol}
         </div>
       `;
     }
@@ -266,6 +274,7 @@
         <span class="size">${p.payload_size}B</span>
         <span class="airtime">${formatAirtime(p.airtime_ms)}</span>
         ${gwCol}
+        ${gwNameCol}
       </div>
     `;
   }
@@ -377,7 +386,11 @@
 
     // Auto-scroll detection
     feedEl.addEventListener('scroll', () => {
+      const wasScrolled = !autoScroll;
       autoScroll = feedEl.scrollTop <= 10;
+      if (wasScrolled && autoScroll && onResumeCallback) {
+        onResumeCallback();
+      }
     });
 
     return { getTypeFilter: () => ({ ...typeFilter }) };
@@ -390,5 +403,13 @@
 
   window.renderPacketFeed = function () {
     renderFeed();
+  };
+
+  window.isPacketFeedScrolled = function () {
+    return !autoScroll;
+  };
+
+  window.onPacketFeedResume = function (cb) {
+    onResumeCallback = cb;
   };
 })();

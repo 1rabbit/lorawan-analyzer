@@ -49,6 +49,7 @@ export interface HideRule {
 export interface ParsedPacket {
   timestamp: Date;
   gateway_id: string;
+  gateway_name?: string | null;
   packet_type: 'data' | 'join_request' | 'downlink' | 'tx_ack';
   dev_addr: string | null;
   join_eui: string | null;
@@ -70,6 +71,7 @@ export interface ParsedPacket {
 export interface LivePacket {
   timestamp: number;
   gateway_id: string;
+  gateway_name?: string;
   type: 'data' | 'join_request' | 'downlink' | 'tx_ack';
   dev_addr?: string;
   f_cnt?: number;
@@ -95,6 +97,8 @@ export interface GatewayStats {
   packet_count: number;
   unique_devices: number;
   total_airtime_ms: number;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export interface OperatorStats {

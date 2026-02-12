@@ -73,40 +73,51 @@ export async function insertPacket(packet: ParsedPacket): Promise<void> {
   });
 }
 
-export async function upsertGateway(gatewayId: string, name: string | null = null): Promise<void> {
+export async function upsertGateway(
+  gatewayId: string,
+  name: string | null = null,
+  location?: { latitude: number; longitude: number; name?: string } | null
+): Promise<void> {
   const client = getClickHouse();
   const now = new Date().toISOString().replace('T', ' ').replace('Z', '');
 
   // Check if gateway exists
   const result = await client.query({
-    query: `SELECT first_seen FROM gateways WHERE gateway_id = {gatewayId:String} LIMIT 1`,
+    query: `SELECT first_seen, name, latitude, longitude FROM gateways WHERE gateway_id = {gatewayId:String} LIMIT 1`,
     query_params: { gatewayId },
     format: 'JSONEachRow',
   });
 
-  const rows = await result.json<{ first_seen: string }>();
+  const rows = await result.json<{ first_seen: string; name: string | null; latitude: number | null; longitude: number | null }>();
+
+  // Use new values if provided, otherwise preserve existing
+  const gwName = name ?? rows[0]?.name ?? null;
+  const lat = location?.latitude ?? rows[0]?.latitude ?? null;
+  const lng = location?.longitude ?? rows[0]?.longitude ?? null;
 
   if (rows.length === 0) {
-    // Insert new gateway
     await client.insert({
       table: 'gateways',
       values: [{
         gateway_id: gatewayId,
-        name,
+        name: gwName,
         first_seen: now,
         last_seen: now,
+        latitude: lat,
+        longitude: lng,
       }],
       format: 'JSONEachRow',
     });
   } else {
-    // Update last_seen
     await client.insert({
       table: 'gateways',
       values: [{
         gateway_id: gatewayId,
-        name,
+        name: gwName,
         first_seen: rows[0].first_seen,
         last_seen: now,
+        latitude: lat,
+        longitude: lng,
       }],
       format: 'JSONEachRow',
     });
@@ -125,7 +136,9 @@ export async function getGateways(): Promise<GatewayStats[]> {
         max(last_seen) as last_seen,
         COALESCE(p.packet_count, 0) as packet_count,
         COALESCE(p.unique_devices, 0) as unique_devices,
-        COALESCE(p.total_airtime_us, 0) / 1000 as total_airtime_ms
+        COALESCE(p.total_airtime_us, 0) / 1000 as total_airtime_ms,
+        any(latitude) as latitude,
+        any(longitude) as longitude
       FROM gateways g
       LEFT JOIN (
         SELECT
@@ -158,7 +171,9 @@ export async function getGatewayById(gatewayId: string): Promise<GatewayStats | 
         g.last_seen,
         COALESCE(p.packet_count, 0) as packet_count,
         COALESCE(p.unique_devices, 0) as unique_devices,
-        COALESCE(p.total_airtime_us, 0) / 1000 as total_airtime_ms
+        COALESCE(p.total_airtime_us, 0) / 1000 as total_airtime_ms,
+        g.latitude,
+        g.longitude
       FROM gateways g
       LEFT JOIN (
         SELECT
@@ -1212,10 +1227,11 @@ export async function getRecentPackets(
   f_port: number | null;
   confirmed: boolean | null;
   airtime_us: number;
+  gateway_name?: string | null;
 }>> {
   const client = getClickHouse();
 
-  const gatewayFilter = gatewayId ? 'AND gateway_id = {gatewayId:String}' : '';
+  const gatewayFilter = gatewayId ? 'AND p.gateway_id = {gatewayId:String}' : '';
   // When filtering by dev_addr, include related tx_ack packets (which have dev_addr=null)
   // by matching on f_cnt (downlink_id) from downlinks belonging to this device
   const devAddrFilter = devAddr
@@ -1224,7 +1240,7 @@ export async function getRecentPackets(
         ${hours ? `AND timestamp > now() - INTERVAL {hours:UInt32} HOUR` : ''}
       )))`
     : '';
-  const hoursFilter = hours ? `AND timestamp > now() - INTERVAL {hours:UInt32} HOUR` : '';
+  const hoursFilter = hours ? `AND p.timestamp > now() - INTERVAL {hours:UInt32} HOUR` : '';
   const rssiFilter = (rssiMin !== undefined || rssiMax !== undefined)
     ? `AND (packet_type IN ('tx_ack', 'downlink') OR (${rssiMin !== undefined ? 'rssi >= {rssiMin:Int32}' : '1=1'} AND ${rssiMax !== undefined ? 'rssi <= {rssiMax:Int32}' : '1=1'}))`
     : '';
@@ -1268,24 +1284,30 @@ export async function getRecentPackets(
   const result = await client.query({
     query: `
       SELECT
-        timestamp,
-        gateway_id,
-        packet_type,
-        dev_addr,
-        join_eui,
-        dev_eui,
-        operator,
-        frequency,
-        spreading_factor,
-        bandwidth,
-        rssi,
-        snr,
-        payload_size,
-        f_cnt,
-        f_port,
-        confirmed,
-        airtime_us
-      FROM packets
+        p.timestamp,
+        p.gateway_id,
+        g.name as gateway_name,
+        p.packet_type,
+        p.dev_addr,
+        p.join_eui,
+        p.dev_eui,
+        p.operator,
+        p.frequency,
+        p.spreading_factor,
+        p.bandwidth,
+        p.rssi,
+        p.snr,
+        p.payload_size,
+        p.f_cnt,
+        p.f_port,
+        p.confirmed,
+        p.airtime_us
+      FROM packets p
+      LEFT JOIN (
+          SELECT gateway_id, any(name) as name
+          FROM gateways
+          GROUP BY gateway_id
+      ) g ON p.gateway_id = g.gateway_id
       WHERE 1=1
         ${gatewayFilter}
         ${devAddrFilter}
@@ -1293,7 +1315,7 @@ export async function getRecentPackets(
         ${rssiFilter}
         ${deviceAddrFilter}
         ${packetTypeFilter}
-      ORDER BY timestamp DESC
+      ORDER BY p.timestamp DESC
       LIMIT {limit:UInt32}
     `,
     query_params: { limit, gatewayId, devAddr, hours, rssiMin, rssiMax },

@@ -82,6 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   await Promise.all([loadMyDevicesConfig(), loadOperatorColors()]);
+  initGatewayMap();
   loadGateways();
   loadAllData();
   initCharts();
@@ -262,16 +263,29 @@ async function loadGateways() {
   const data = await api('/api/gateways');
   gateways = data.gateways || [];
   renderGatewayTabs();
+  updateGatewayInfoPanel();
+
+  // Update map based on selection
+  if (!selectedGateway) {
+    updateGatewayMap(gateways);
+  } else {
+    const selected = gateways.find(g => g.gateway_id === selectedGateway);
+    updateGatewayMap(selected ? [selected] : []);
+  }
 }
 
 function renderGatewayTabs() {
   const container = document.getElementById('gateway-tabs');
-  container.innerHTML = gateways.map(gw => `
-    <button class="gateway-tab px-3 py-1 rounded text-xs" data-gateway="${gw.gateway_id}" title="${gw.gateway_id}">
-      ${gw.gateway_id}
+  container.innerHTML = gateways.map(gw => {
+    const label = gw.name || gw.gateway_id;
+    const title = gw.name ? `${gw.name} (${gw.gateway_id})` : gw.gateway_id;
+    return `
+    <button class="gateway-tab px-3 py-1 rounded text-xs" data-gateway="${gw.gateway_id}" title="${title}">
+      ${label}
       <span class="text-gray-500 ml-1">${formatNumber(gw.packet_count)}</span>
     </button>
-  `).join('');
+  `;
+  }).join('');
 
   container.querySelectorAll('.gateway-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -315,10 +329,39 @@ function collapseGatewaySelector() {
   document.getElementById('gateway-expand-btn').classList.remove('expanded');
 }
 
+function updateGatewayInfoPanel() {
+  const panel = document.getElementById('gateway-info-panel');
+  const nameEl = document.getElementById('gateway-info-name');
+  const idEl = document.getElementById('gateway-info-id');
+
+  if (!panel || !nameEl || !idEl) return;
+
+  if (selectedGateway) {
+    const gw = gateways.find(g => g.gateway_id === selectedGateway);
+    if (gw) {
+      nameEl.textContent = gw.name || 'Unnamed';
+      idEl.textContent = gw.gateway_id;
+      panel.classList.remove('hidden');
+      return;
+    }
+  }
+  panel.classList.add('hidden');
+}
+
 function selectGateway(gatewayId) {
   selectedGateway = gatewayId;
   saveSelectedGateway();
   applyGatewayActiveState();
+  updateGatewayInfoPanel();
+
+  // Update map based on selection
+  if (!gatewayId) {
+    updateGatewayMap(gateways);
+  } else {
+    const selected = gateways.find(g => g.gateway_id === gatewayId);
+    updateGatewayMap(selected ? [selected] : []);
+  }
+
   loadAllData();
 }
 
@@ -425,9 +468,20 @@ function initCharts() {
     type: 'doughnut',
     data: { labels: [], datasets: [] },
     options: {
+      radius: '70%',
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { position: 'right', labels: { color: '#9ca3af', boxWidth: 12 } } }
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            color: '#9ca3af',
+            boxWidth: 12,
+            padding: 4,
+            font: { size: 12 }
+          }
+        }
+      }
     }
   });
 
@@ -505,7 +559,12 @@ async function loadOperatorChart() {
   const data = await api(`/api/stats/operators?${params}`);
   const operators = data.operators || [];
 
-  operatorChart.data.labels = operators.map(o => o.operator);
+  const total = operators.reduce((sum, o) => sum + o.packet_count, 0);
+
+  operatorChart.data.labels = operators.map(o => {
+    const pct = total > 0 ? ((o.packet_count / total) * 100).toFixed(1) : 0;
+    return `${o.operator} ${pct}%`;
+  });
   operatorChart.data.datasets = [{
     data: operators.map(o => o.packet_count),
     backgroundColor: operators.map(o => getOperatorColor(o.operator)),
