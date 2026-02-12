@@ -10,6 +10,7 @@ RUN npm ci --only=production
 COPY tsconfig.json ./
 COPY src ./src
 COPY public ./public
+COPY docs ./docs
 
 # Install dev dependencies for build, then build, then remove dev deps
 RUN npm install && npm run build && npm prune --production

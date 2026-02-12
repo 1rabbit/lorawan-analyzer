@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="nav.toolkit">Toolkit ChirpStack - LoRaWAN Analyzer</title>
+  <script src="i18n.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="text-gray-100 min-h-screen">
+  <div class="flex flex-col h-screen">
+    <!-- Header -->
+    <header class="bg-white/5 border-b border-white/10 px-6 py-2 flex-shrink-0">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-6">
+          <h1 class="text-base font-bold text-white" data-i18n="nav.title">LoRaWAN Analyzer</h1>
+          <nav class="flex gap-1">
+            <a href="index.html" class="nav-link px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><span data-i18n="nav.dashboard">Dashboard</span></a>
+            <a href="live.html" class="nav-link px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="1" fill="currentColor"/><path d="M8.6 15.4a5 5 0 010-6.8M15.4 8.6a5 5 0 010 6.8"/></svg><span data-i18n="nav.live">Live Stream</span></a>
+            <a href="management.html" class="nav-link active px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg><span data-i18n="nav.toolkit">Toolkit ChirpStack</span></a>
+            <a href="settings.html" class="nav-link px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M2 14h4M10 8h4M18 16h4"/></svg><span data-i18n="nav.settings">Settings</span></a>
+          </nav>
+          <div class="border-l border-white/20 h-4"></div>
+          <div id="global-search"></div>
+        </div>
+        <div class="flex items-center gap-1 border border-white/20 rounded overflow-hidden">
+          <button class="lang-btn px-2 py-0.5 text-xs" data-lang="en">EN</button>
+          <button class="lang-btn px-2 py-0.5 text-xs" data-lang="fr">FR</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="flex-1 overflow-auto p-6">
+      <div class="max-w-4xl mx-auto space-y-6">
+
+        <!-- Section 1: ChirpStack Connection -->
+        <div class="panel">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="panel-title mb-0 flex items-center gap-2"><svg class="w-4 h-4 text-[#00d4aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg><span data-i18n="mgmt.connection_title">ChirpStack Connection</span></h3>
+            <div class="flex items-center gap-2">
+              <span id="cs-status-dot" class="w-2.5 h-2.5 rounded-full bg-gray-500"></span>
+              <span id="cs-status-text" class="text-xs text-white/50" data-i18n="mgmt.disconnected">Disconnected</span>
+            </div>
+          </div>
+
+          <!-- Row 1: Saved servers -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-xs text-white/50 mb-1" data-i18n="mgmt.saved_servers">Saved Servers</label>
+              <div class="flex gap-2">
+                <select id="server-select" class="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                  <option value="" data-i18n="mgmt.select_server">-- Select a server --</option>
+                </select>
+                <button id="btn-load-server" class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-sm text-white/60 transition-colors" data-i18n="common.load">Load</button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs text-white/50 mb-1" data-i18n="mgmt.server_actions">Server Actions</label>
+              <div class="flex gap-2">
+                <button id="btn-save-server" class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-sm font-medium transition-colors" data-i18n="mgmt.save_server">Save</button>
+                <button id="btn-delete-server" class="text-red-400 hover:text-red-300 text-xs px-2" data-i18n="mgmt.delete_server">Delete</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 2: URL + Token -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-xs text-white/50 mb-1" data-i18n="mgmt.chirpstack_url">ChirpStack URL</label>
+              <input type="text" id="cs-url" placeholder="http://chirpstack:8080" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+            </div>
+            <div>
+              <label class="block text-xs text-white/50 mb-1" data-i18n="mgmt.api_token">API Token</label>
+              <input type="password" id="cs-token" placeholder="API token" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+            </div>
+          </div>
+
+          <!-- Row 3: Connect button -->
+          <div class="flex items-center gap-3 mb-4">
+            <button id="btn-test-connection" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors" data-i18n="mgmt.connect">Connect</button>
+            <span id="cs-test-status" class="text-xs text-white/50"></span>
+          </div>
+
+          <!-- Connection result area (hidden until tested) -->
+          <div id="connection-result" class="hidden">
+            <div class="border-t border-white/10 pt-4 mt-2">
+              <!-- Key type + selectors -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label class="block text-xs text-white/50 mb-1">Key Type</label>
+                  <div id="key-type-display" class="text-sm text-white/80 py-2">-</div>
+                </div>
+                <div id="tenant-id-manual-wrap" class="hidden">
+                  <label class="block text-xs text-white/50 mb-1">Tenant ID (tenant key)</label>
+                  <input type="text" id="tenant-id-manual" placeholder="Tenant ID" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label class="block text-xs text-white/50 mb-1" data-i18n="mgmt.select_tenant">Tenant</label>
+                  <select id="tenant-select" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                    <option value="" data-i18n="common.select">-- Select --</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs text-white/50 mb-1" data-i18n="mgmt.application">Application</label>
+                  <select id="app-select" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                    <option value="" data-i18n="common.select">-- Select --</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs text-white/50 mb-1" data-i18n="mgmt.device_profile">Device Profile</label>
+                  <select id="dp-select" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                    <option value="" data-i18n="common.select">-- Select --</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Mini dashboard -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="stat-card accent-teal">
+                  <div class="label flex items-center gap-1.5"><svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/></svg><span data-i18n="mgmt.total_devices">Total Devices</span></div>
+                  <div id="stat-total-devices" class="value">-</div>
+                </div>
+                <div class="stat-card accent-green">
+                  <div class="label flex items-center gap-1.5"><svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg><span data-i18n="mgmt.active_24h">Active (24h)</span></div>
+                  <div id="stat-active-devices" class="value">-</div>
+                </div>
+                <div class="stat-card accent-amber">
+                  <div class="label flex items-center gap-1.5"><svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span data-i18n="mgmt.inactive">Inactive</span></div>
+                  <div id="stat-inactive-devices" class="value">-</div>
+                </div>
+                <div class="stat-card accent-red">
+                  <div class="label flex items-center gap-1.5"><svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span data-i18n="mgmt.never_seen">Never Seen</span></div>
+                  <div id="stat-never-seen" class="value">-</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool Tiles Grid (hidden until connected) -->
+        <div id="tool-tiles" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 hidden">
+          <button class="tool-tile" data-tool="import" data-section="import">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            <strong data-i18n="tiles.import">Import</strong>
+            <span class="tile-desc" data-i18n="tiles.import_desc">Import devices from a CSV/XLSX file</span>
+          </button>
+          <button class="tool-tile" data-tool="export" data-section="bulk">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            <strong data-i18n="tiles.export">Export</strong>
+            <span class="tile-desc" data-i18n="tiles.export_desc">Export application devices to CSV or XLSX</span>
+          </button>
+          <button class="tool-tile" data-tool="delete" data-section="bulk">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            <strong data-i18n="tiles.delete">Bulk Delete</strong>
+            <span class="tile-desc" data-i18n="tiles.delete_desc">Select and delete multiple devices</span>
+          </button>
+          <button class="tool-tile" data-tool="migrate" data-section="bulk">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <strong data-i18n="tiles.migrate">Migrate</strong>
+            <span class="tile-desc" data-i18n="tiles.migrate_desc">Move devices to another application</span>
+          </button>
+          <button class="tool-tile" data-tool="change-dp" data-section="bulk">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            <strong data-i18n="tiles.change_dp">Change Profile</strong>
+            <span class="tile-desc" data-i18n="tiles.change_dp_desc">Change the Device Profile of multiple devices</span>
+          </button>
+          <button class="tool-tile" data-tool="update-tags" data-section="bulk">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1"/></svg>
+            <strong data-i18n="tiles.update_tags">Update Tags</strong>
+            <span class="tile-desc" data-i18n="tiles.update_tags_desc">Update tags from CSV/XLSX file</span>
+          </button>
+          <button class="tool-tile" data-tool="search" data-section="bulk">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <strong data-i18n="tiles.search">Search</strong>
+            <span class="tile-desc" data-i18n="tiles.search_desc">Find a device by DevEUI across all apps</span>
+          </button>
+          <button class="tool-tile" data-tool="analyze" data-section="analyze">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            <strong data-i18n="tiles.analyze">Analyse</strong>
+            <span class="tile-desc" data-i18n="tiles.analyze_desc">Dashboard and detailed device metrics</span>
+          </button>
+        </div>
+
+        <!-- Section 2: Device Import -->
+        <div id="section-import" class="hidden">
+          <div class="tool-nav-bar" onclick="backToTiles()">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            <span class="tool-nav-breadcrumb" data-i18n="nav.toolkit">Toolkit ChirpStack</span>
+            <svg class="w-3 h-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            <span class="tool-nav-current"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><span data-i18n="import.title">Device Import</span></span>
+          </div>
+          <div class="panel">
+          <h3 class="panel-title flex items-center gap-2"><svg class="w-4 h-4 text-[#00d4aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><span data-i18n="import.title">Device Import</span></h3>
+
+          <!-- Import Profiles sub-section -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-sm font-medium text-white/70" data-i18n="import.profiles">Import Profiles</h4>
+              <button id="btn-toggle-profiles" class="text-xs text-white/40 hover:text-white/60" data-i18n="common.show_hide">Show/Hide</button>
+            </div>
+            <div id="profiles-area" class="hidden">
+              <div id="profiles-list" class="space-y-1 mb-3"></div>
+              <!-- Create profile form -->
+              <div class="flex gap-2 items-end">
+                <div class="flex-1">
+                  <label class="block text-xs text-white/50 mb-1" data-i18n="import.profile_name">Profile Name</label>
+                  <input type="text" id="profile-name" data-i18n-placeholder="import.profile_name" placeholder="My profile" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+                </div>
+                <div class="flex-1">
+                  <label class="block text-xs text-white/50 mb-1" data-i18n="import.required_tags">Required Tags (comma-separated)</label>
+                  <input type="text" id="profile-tags" placeholder="site,building" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+                </div>
+                <button id="btn-create-profile" class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-sm font-medium transition-colors whitespace-nowrap" data-i18n="common.create">Create</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Separator -->
+          <div class="border-t border-white/10 pt-4 mb-4"></div>
+
+          <!-- File import sub-section -->
+          <div class="mb-4">
+            <!-- Import target: Application + Device Profile -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-xs text-white/50 mb-1" data-i18n="import.target_app">Target Application</label>
+                <select id="import-app-select" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                  <option value="" data-i18n="common.select">-- Select --</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-white/50 mb-1" data-i18n="import.target_dp">Target Device Profile</label>
+                <select id="import-dp-select" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                  <option value="" data-i18n="common.select">-- Select --</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-xs text-white/50 mb-1" data-i18n="import.import_profile">Import Profile (optional)</label>
+                <select id="import-profile-select" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                  <option value="" data-i18n="common.none">-- None --</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-white/50 mb-1" data-i18n="import.download_template">Download Template</label>
+                <button id="btn-download-template" class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-sm text-white/60 transition-colors" data-i18n="import.csv_template">CSV Template</button>
+              </div>
+            </div>
+
+            <!-- Drop zone -->
+            <div id="drop-zone" class="border-2 border-dashed border-white/20 rounded-lg p-8 text-center cursor-pointer hover:border-white/40 transition-colors mb-4">
+              <div class="text-white/40 text-sm" data-i18n="import.drop_zone">Drop a CSV/XLSX file here or click to select</div>
+              <input type="file" id="file-input" accept=".csv,.xls,.xlsx" class="hidden">
+              <div id="file-info" class="text-xs text-white/30 mt-2 hidden"></div>
+            </div>
+          </div>
+
+          <!-- Parse result area (hidden until file uploaded) -->
+          <div id="parse-result" class="hidden mb-4">
+            <div class="border-t border-white/10 pt-4 mb-4"></div>
+            <h4 class="text-sm font-medium text-white/70 mb-3" data-i18n="import.parse_result">Parse Result</h4>
+
+            <!-- File stats -->
+            <div class="flex gap-4 mb-3 text-xs text-white/50">
+              <span data-i18n="import.separator">Separator:</span> <strong id="parse-separator" class="text-white/80"></strong>
+              <span data-i18n="import.rows">Rows:</span> <strong id="parse-rows" class="text-white/80"></strong>
+              <span data-i18n="import.columns">Columns:</span> <strong id="parse-cols" class="text-white/80"></strong>
+            </div>
+
+            <!-- Column mapping -->
+            <div id="mapping-area" class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4"></div>
+
+            <!-- Additional tags mapping (from profile) -->
+            <div id="tags-mapping-area" class="hidden mb-4"></div>
+
+            <!-- Preview table -->
+            <div class="overflow-x-auto mb-4">
+              <table id="preview-table" class="w-full text-xs">
+                <thead id="preview-thead"></thead>
+                <tbody id="preview-tbody"></tbody>
+              </table>
+            </div>
+
+            <!-- Validate + Import buttons -->
+            <div class="flex items-center gap-3">
+              <button id="btn-validate" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors" data-i18n="import.validate">Validate</button>
+              <span id="validate-status" class="text-xs text-white/50"></span>
+            </div>
+          </div>
+
+          <!-- Validation result area (hidden until validated) -->
+          <div id="validation-result" class="hidden mb-4">
+            <div class="border-t border-white/10 pt-4 mb-4"></div>
+            <h4 class="text-sm font-medium text-white/70 mb-3" data-i18n="import.validation_result">Validation Result</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div class="stat-card"><div class="label" data-i18n="import.valid">Valid</div><div id="val-valid" class="value text-green-400">-</div></div>
+              <div class="stat-card"><div class="label" data-i18n="import.errors">Errors</div><div id="val-errors" class="value text-red-400">-</div></div>
+              <div class="stat-card"><div class="label" data-i18n="import.duplicates">Duplicates</div><div id="val-duplicates" class="value text-yellow-400">-</div></div>
+              <div class="stat-card"><div class="label" data-i18n="import.warnings">Warnings</div><div id="val-warnings" class="value text-white/50">-</div></div>
+            </div>
+            <div id="val-error-list" class="space-y-1 mb-3 max-h-40 overflow-y-auto"></div>
+            <div id="val-duplicate-list" class="space-y-1 mb-3 max-h-40 overflow-y-auto"></div>
+
+            <!-- Duplicate action -->
+            <div id="duplicate-action-area" class="hidden mb-4">
+              <label class="block text-xs text-white/50 mb-1" data-i18n="import.duplicate_action">Duplicate Action</label>
+              <div class="flex gap-2">
+                <label class="flex items-center gap-1 text-sm text-white/70"><input type="radio" name="dup-action" value="skip" checked> <span data-i18n="import.skip">Skip</span></label>
+                <label class="flex items-center gap-1 text-sm text-white/70"><input type="radio" name="dup-action" value="overwrite"> <span data-i18n="import.overwrite">Overwrite</span></label>
+              </div>
+            </div>
+
+            <!-- Import button -->
+            <div class="flex items-center gap-3">
+              <button id="btn-import" class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-sm font-medium transition-colors" data-i18n="import.import_btn">Import</button>
+              <span id="import-status" class="text-xs text-white/50"></span>
+            </div>
+          </div>
+
+          <!-- Import result area (hidden until imported) -->
+          <div id="import-result" class="hidden">
+            <div class="border-t border-white/10 pt-4 mb-4"></div>
+            <h4 class="text-sm font-medium text-white/70 mb-3" data-i18n="import.import_result">Import Result</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div class="stat-card"><div class="label" data-i18n="import.created">Created</div><div id="imp-created" class="value text-green-400">-</div></div>
+              <div class="stat-card"><div class="label" data-i18n="import.skipped">Skipped</div><div id="imp-skipped" class="value text-yellow-400">-</div></div>
+              <div class="stat-card"><div class="label" data-i18n="import.errors">Errors</div><div id="imp-errors" class="value text-red-400">-</div></div>
+              <div class="stat-card"><div class="label" data-i18n="import.total">Total</div><div id="imp-total" class="value">-</div></div>
+            </div>
+            <div id="imp-error-list" class="space-y-1 mb-3 max-h-40 overflow-y-auto"></div>
+            <button id="btn-undo-import" class="px-4 py-2 bg-red-600 hover:bg-red-500 rounded text-sm font-medium transition-colors" data-i18n="import.undo">Undo Import</button>
+            <span id="undo-status" class="text-xs text-white/50 ml-2"></span>
+          </div>
+        </div>
+        </div>
+
+        <!-- Section 3: Export & Bulk Operations -->
+        <div id="section-bulk" class="hidden">
+          <div class="tool-nav-bar" onclick="backToTiles()">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            <span class="tool-nav-breadcrumb" data-i18n="nav.toolkit">Toolkit ChirpStack</span>
+            <svg class="w-3 h-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            <span id="bulk-nav-current" class="tool-nav-current"><span id="bulk-title-text" data-i18n="bulk.title">Export &amp; Bulk Operations</span></span>
+          </div>
+          <div class="panel">
+          <h3 id="bulk-section-title" class="panel-title flex items-center gap-2"><svg class="w-4 h-4 text-[#00d4aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span id="bulk-title-text-inner" data-i18n="bulk.title">Export &amp; Bulk Operations</span></h3>
+
+          <!-- Application selector for bulk operations -->
+          <div class="mb-4">
+            <label class="block text-xs text-white/50 mb-1" data-i18n="bulk.application">Application</label>
+            <select id="bulk-app-select" class="w-full md:w-1/2 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+              <option value="" data-i18n="common.select">-- Select --</option>
+            </select>
+          </div>
+
+          <!-- Tab navigation (hidden when coming from tiles, used programmatically) -->
+          <div id="bulk-tab-bar" class="flex flex-wrap gap-1 mb-4 border-b border-white/10 pb-2 hidden">
+            <button class="bulk-tab px-3 py-1.5 rounded text-xs font-medium transition-colors bg-white/10 text-white flex items-center gap-1" data-tab="export"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span data-i18n="bulk.tab_export">Export</span></button>
+            <button class="bulk-tab px-3 py-1.5 rounded text-xs font-medium transition-colors text-white/50 hover:text-white/70 flex items-center gap-1" data-tab="delete"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg><span data-i18n="bulk.tab_delete">Delete</span></button>
+            <button class="bulk-tab px-3 py-1.5 rounded text-xs font-medium transition-colors text-white/50 hover:text-white/70 flex items-center gap-1" data-tab="migrate"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg><span data-i18n="bulk.tab_migrate">Migrate</span></button>
+            <button class="bulk-tab px-3 py-1.5 rounded text-xs font-medium transition-colors text-white/50 hover:text-white/70 flex items-center gap-1" data-tab="change-dp"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg><span data-i18n="bulk.tab_change_dp">Change DP</span></button>
+            <button class="bulk-tab px-3 py-1.5 rounded text-xs font-medium transition-colors text-white/50 hover:text-white/70 flex items-center gap-1" data-tab="update-tags"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1"/></svg><span data-i18n="bulk.tab_update_tags">Update Tags</span></button>
+            <button class="bulk-tab px-3 py-1.5 rounded text-xs font-medium transition-colors text-white/50 hover:text-white/70 flex items-center gap-1" data-tab="search"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><span data-i18n="bulk.tab_search">Search</span></button>
+          </div>
+
+          <!-- Tab: Export -->
+          <div id="tab-export" class="bulk-tab-content">
+            <div class="flex items-center gap-3 mb-4">
+              <button id="btn-load-export" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors" data-i18n="export.load_devices">Load Devices</button>
+              <span id="export-device-count" class="text-xs text-white/50"></span>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div>
+                <label class="block text-xs text-white/50 mb-1" data-i18n="export.filter_dp">Device Profile</label>
+                <select id="export-filter-dp" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                  <option value="" data-i18n="common.all">-- All --</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-white/50 mb-1" data-i18n="export.filter_activity">Activity</label>
+                <select id="export-filter-activity" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                  <option value="" data-i18n="common.all">-- All --</option>
+                  <option value="active" data-i18n="export.active_24h">Active (24h)</option>
+                  <option value="inactive" data-i18n="export.inactive">Inactive</option>
+                  <option value="never_seen" data-i18n="export.never_seen_opt">Never seen</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-white/50 mb-1" data-i18n="export.filter_tag">Tag (key=value)</label>
+                <input type="text" id="export-filter-tag" placeholder="site=paris" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+              </div>
+              <div>
+                <label class="block text-xs text-white/50 mb-1" data-i18n="export.format">Format</label>
+                <select id="export-format" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                  <option value="csv">CSV</option>
+                  <option value="xlsx">XLSX</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-4 mb-4">
+              <label class="flex items-center gap-2 text-sm text-white/70">
+                <input type="checkbox" id="export-include-keys" class="rounded">
+                <span data-i18n="export.include_keys">Include Keys (AppKey)</span>
+              </label>
+            </div>
+
+            <div id="export-preview" class="hidden mb-4">
+              <h5 class="text-xs font-medium text-white/50 mb-2" data-i18n="export.preview">Preview (first 5)</h5>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                  <thead id="export-preview-thead"></thead>
+                  <tbody id="export-preview-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button id="btn-download-export" class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-sm font-medium transition-colors" data-i18n="common.download">Download</button>
+              <span id="export-status" class="text-xs text-white/50"></span>
+            </div>
+          </div>
+
+          <!-- Tab: Bulk Delete -->
+          <div id="tab-delete" class="bulk-tab-content hidden">
+            <div class="flex items-center gap-3 mb-4">
+              <button id="btn-load-delete" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors" data-i18n="delete.load_devices">Load Devices</button>
+              <input type="text" id="delete-search" data-i18n-placeholder="delete.search_placeholder" placeholder="Search (DevEUI, name...)" class="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+            </div>
+
+            <div id="delete-devices-list" class="space-y-1 max-h-60 overflow-y-auto mb-4"></div>
+
+            <div class="flex items-center gap-3 mb-4">
+              <button id="btn-select-all-delete" class="text-xs text-white/40 hover:text-white/60" data-i18n="delete.select_all">Select All</button>
+              <button id="btn-deselect-all-delete" class="text-xs text-white/40 hover:text-white/60" data-i18n="delete.deselect_all">Deselect All</button>
+              <span id="delete-selected-count" class="text-xs text-white/50">0 selected</span>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button id="btn-bulk-delete" class="px-4 py-2 bg-red-600 hover:bg-red-500 rounded text-sm font-medium transition-colors" data-i18n="delete.delete_btn">Delete</button>
+              <span id="delete-status" class="text-xs text-white/50"></span>
+            </div>
+
+            <div id="delete-result" class="hidden mt-4">
+              <div class="border-t border-white/10 pt-3">
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="stat-card"><div class="label" data-i18n="delete.deleted">Deleted</div><div id="del-deleted" class="value text-green-400">-</div></div>
+                  <div class="stat-card"><div class="label" data-i18n="import.errors">Errors</div><div id="del-errors" class="value text-red-400">-</div></div>
+                </div>
+                <div id="del-error-list" class="space-y-1 mt-2 max-h-40 overflow-y-auto"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Migration -->
+          <div id="tab-migrate" class="bulk-tab-content hidden">
+            <div class="flex items-center gap-3 mb-4">
+              <button id="btn-load-migrate" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors" data-i18n="migrate.load_devices">Load Devices</button>
+              <input type="text" id="migrate-search" data-i18n-placeholder="migrate.search_placeholder" placeholder="Search..." class="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+            </div>
+
+            <div id="migrate-devices-list" class="space-y-1 max-h-60 overflow-y-auto mb-4"></div>
+
+            <div class="flex items-center gap-3 mb-4">
+              <button id="btn-select-all-migrate" class="text-xs text-white/40 hover:text-white/60" data-i18n="migrate.select_all">Select All</button>
+              <button id="btn-deselect-all-migrate" class="text-xs text-white/40 hover:text-white/60" data-i18n="migrate.deselect_all">Deselect All</button>
+              <span id="migrate-selected-count" class="text-xs text-white/50">0 selected</span>
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-xs text-white/50 mb-1" data-i18n="migrate.dest_app">Destination Application</label>
+              <select id="migrate-dest-app" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                <option value="" data-i18n="common.select">-- Select --</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button id="btn-bulk-migrate" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors" data-i18n="migrate.migrate_btn">Migrate</button>
+              <span id="migrate-status" class="text-xs text-white/50"></span>
+            </div>
+
+            <div id="migrate-result" class="hidden mt-4">
+              <div class="border-t border-white/10 pt-3">
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="stat-card"><div class="label" data-i18n="migrate.migrated">Migrated</div><div id="mig-migrated" class="value text-green-400">-</div></div>
+                  <div class="stat-card"><div class="label" data-i18n="import.errors">Errors</div><div id="mig-errors" class="value text-red-400">-</div></div>
+                </div>
+                <div id="mig-error-list" class="space-y-1 mt-2 max-h-40 overflow-y-auto"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Change Device Profile -->
+          <div id="tab-change-dp" class="bulk-tab-content hidden">
+            <div class="flex items-center gap-3 mb-4">
+              <button id="btn-load-dp-change" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors" data-i18n="dp.load_devices">Load Devices</button>
+              <input type="text" id="dp-search" data-i18n-placeholder="dp.search_placeholder" placeholder="Search..." class="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+            </div>
+
+            <div id="dp-devices-list" class="space-y-1 max-h-60 overflow-y-auto mb-4"></div>
+
+            <div class="flex items-center gap-3 mb-4">
+              <button id="btn-select-all-dp" class="text-xs text-white/40 hover:text-white/60" data-i18n="dp.select_all">Select All</button>
+              <button id="btn-deselect-all-dp" class="text-xs text-white/40 hover:text-white/60" data-i18n="dp.deselect_all">Deselect All</button>
+              <span id="dp-selected-count" class="text-xs text-white/50">0 selected</span>
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-xs text-white/50 mb-1" data-i18n="dp.new_profile">New Device Profile</label>
+              <select id="dp-new-profile" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                <option value="" data-i18n="common.select">-- Select --</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button id="btn-bulk-change-dp" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors" data-i18n="dp.apply_btn">Apply</button>
+              <span id="dp-status" class="text-xs text-white/50"></span>
+            </div>
+
+            <div id="dp-result" class="hidden mt-4">
+              <div class="border-t border-white/10 pt-3">
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="stat-card"><div class="label" data-i18n="dp.updated">Updated</div><div id="dpchg-updated" class="value text-green-400">-</div></div>
+                  <div class="stat-card"><div class="label" data-i18n="import.errors">Errors</div><div id="dpchg-errors" class="value text-red-400">-</div></div>
+                </div>
+                <div id="dpchg-error-list" class="space-y-1 mt-2 max-h-40 overflow-y-auto"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Update Tags -->
+          <div id="tab-update-tags" class="bulk-tab-content hidden">
+            <p class="text-xs text-white/40 mb-4" data-i18n-html="tags.description">Upload a CSV/XLSX file with a <strong>dev_eui</strong> column and tag columns.</p>
+
+            <div class="flex items-center gap-4 mb-4">
+              <label class="flex items-center gap-2 text-sm text-white/70">
+                <input type="radio" name="tags-mode" value="merge" checked> <span data-i18n="tags.merge">Merge (add/update)</span>
+              </label>
+              <label class="flex items-center gap-2 text-sm text-white/70">
+                <input type="radio" name="tags-mode" value="replace"> <span data-i18n="tags.replace">Replace (replace all)</span>
+              </label>
+            </div>
+
+            <div id="tags-drop-zone" class="border-2 border-dashed border-white/20 rounded-lg p-8 text-center cursor-pointer hover:border-white/40 transition-colors mb-4">
+              <div class="text-white/40 text-sm" data-i18n="tags.drop_zone">Drop a CSV/XLSX file or click to select</div>
+              <input type="file" id="tags-file-input" accept=".csv,.xls,.xlsx" class="hidden">
+              <div id="tags-file-info" class="text-xs text-white/30 mt-2 hidden"></div>
+            </div>
+
+            <div id="tags-preview-area" class="hidden mb-4">
+              <h5 class="text-xs font-medium text-white/50 mb-2" data-i18n="tags.preview">Preview</h5>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                  <thead id="tags-preview-thead"></thead>
+                  <tbody id="tags-preview-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button id="btn-execute-tags" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors" data-i18n="tags.run_update">Run Update</button>
+              <span id="tags-status" class="text-xs text-white/50"></span>
+            </div>
+
+            <div id="tags-result" class="hidden mt-4">
+              <div class="border-t border-white/10 pt-3">
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="stat-card"><div class="label" data-i18n="tags.updated">Updated</div><div id="tags-updated" class="value text-green-400">-</div></div>
+                  <div class="stat-card"><div class="label" data-i18n="import.errors">Errors</div><div id="tags-errors" class="value text-red-400">-</div></div>
+                </div>
+                <div id="tags-error-list" class="space-y-1 mt-2 max-h-40 overflow-y-auto"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Cross-app Search -->
+          <div id="tab-search" class="bulk-tab-content hidden">
+            <div class="flex items-center gap-3 mb-4">
+              <input type="text" id="search-deveui" data-i18n-placeholder="cross_search.placeholder" placeholder="DevEUI (full or partial)" class="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+              <button id="btn-search-cross" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors" data-i18n="cross_search.search_btn">Search</button>
+            </div>
+            <span id="search-status" class="text-xs text-white/50 mb-2 block"></span>
+
+            <div id="search-results" class="hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                  <thead id="search-results-thead"></thead>
+                  <tbody id="search-results-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+
+        <!-- Section 4: Device Analysis -->
+        <div id="section-analyze" class="hidden">
+          <div class="tool-nav-bar" onclick="backToTiles()">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            <span class="tool-nav-breadcrumb" data-i18n="nav.toolkit">Toolkit ChirpStack</span>
+            <svg class="w-3 h-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            <span class="tool-nav-current"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><span data-i18n="tiles.analyze">Analyse</span></span>
+          </div>
+
+          <!-- Controls -->
+          <div class="panel mb-4">
+            <div class="flex items-center justify-between">
+              <h3 class="panel-title flex items-center gap-2 mb-0"><svg class="w-4 h-4 text-[#00d4aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><span data-i18n="analyze.title">Device Analysis</span></h3>
+              <button id="btn-analyze" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors" data-i18n="analyze.run">Analyze Devices</button>
+            </div>
+            <div id="analyze-progress" class="hidden mt-4">
+              <div class="flex justify-between text-xs text-white/50 mb-1">
+                <span id="analyze-progress-text" data-i18n="common.loading">Loading...</span>
+                <span id="analyze-progress-pct">0%</span>
+              </div>
+              <div class="w-full bg-white/10 rounded-full h-1.5">
+                <div id="analyze-progress-bar" class="h-1.5 rounded-full transition-all" style="width:0%;background:var(--accent)"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stats cards -->
+          <div id="analyze-stats" class="hidden mb-4">
+            <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-4">
+              <div class="stat-card accent-teal"><div class="label" data-i18n="analyze.total">Total</div><div id="az-total" class="value">-</div></div>
+              <div class="stat-card accent-green"><div class="label" data-i18n="analyze.status_active">Active (&lt;24h)</div><div id="az-active" class="value">-</div></div>
+              <div class="stat-card accent-blue"><div class="label" data-i18n="analyze.status_recent">Recent (1-7d)</div><div id="az-recent" class="value">-</div></div>
+              <div class="stat-card accent-amber"><div class="label" data-i18n="analyze.status_inactive">Inactive (7-30d)</div><div id="az-inactive" class="value">-</div></div>
+              <div class="stat-card accent-red"><div class="label" data-i18n="analyze.status_offline">Offline (&gt;30d)</div><div id="az-offline" class="value">-</div></div>
+              <div class="stat-card"><div class="label" data-i18n="analyze.status_never">Never Seen</div><div id="az-never" class="value">-</div></div>
+            </div>
+            <!-- Profile distribution -->
+            <div class="panel">
+              <h4 class="text-xs font-medium text-white/50 mb-3" data-i18n="analyze.profile_dist">Profile Distribution</h4>
+              <div id="az-profile-bars" class="space-y-2"></div>
+            </div>
+          </div>
+
+          <!-- Filters + Table -->
+          <div id="analyze-table-section" class="hidden">
+            <div class="panel">
+              <div class="flex flex-wrap items-center gap-3 mb-4">
+                <input type="text" id="az-search" data-i18n-placeholder="common.search" placeholder="Search..." class="flex-1 min-w-[150px] bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+                <select id="az-status-filter" class="bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                  <option value="" data-i18n="analyze.all_statuses">All statuses</option>
+                  <option value="active" data-i18n="analyze.status_active">Active</option>
+                  <option value="recent" data-i18n="analyze.status_recent">Recent</option>
+                  <option value="inactive" data-i18n="analyze.status_inactive">Inactive</option>
+                  <option value="offline" data-i18n="analyze.status_offline">Offline</option>
+                  <option value="never" data-i18n="analyze.status_never">Never seen</option>
+                </select>
+                <select id="az-profile-filter" class="bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                  <option value="" data-i18n="analyze.all_profiles">All profiles</option>
+                </select>
+                <select id="az-sort" class="bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
+                  <option value="last_seen_desc" data-i18n="analyze.sort_recent">Last seen (recent)</option>
+                  <option value="last_seen_asc" data-i18n="analyze.sort_oldest">Last seen (oldest)</option>
+                  <option value="name_asc" data-i18n="analyze.sort_name_az">Name (A-Z)</option>
+                  <option value="name_desc" data-i18n="analyze.sort_name_za">Name (Z-A)</option>
+                </select>
+                <span class="flex-1"></span>
+                <span id="az-count" class="text-xs text-white/50">0 devices</span>
+                <button id="btn-az-export" class="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-xs text-white/60 transition-colors flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span data-i18n="analyze.export_csv">Export CSV</span></button>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                  <thead>
+                    <tr class="text-left text-white/40 border-b border-white/10">
+                      <th class="px-2 py-2" data-i18n="analyze.col_name">Name</th>
+                      <th class="px-2 py-2">DevEUI</th>
+                      <th class="px-2 py-2" data-i18n="analyze.col_profile">Profile</th>
+                      <th class="px-2 py-2">Tags</th>
+                      <th class="px-2 py-2" data-i18n="analyze.col_last_seen">Last Seen</th>
+                      <th class="px-2 py-2" data-i18n="analyze.col_status">Status</th>
+                      <th class="px-2 py-2" data-i18n="analyze.col_actions">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="az-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Metrics Modal -->
+  <div id="metrics-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="closeMetricsModal()"></div>
+    <div class="modal-content" style="max-width:700px">
+      <div class="modal-header">
+        <div>
+          <h2 id="metrics-device-name" class="text-base font-semibold text-white"></h2>
+          <span id="metrics-device-eui" class="text-xs text-white/40 font-mono"></span>
+        </div>
+        <div class="flex items-center gap-3">
+          <select id="metrics-period" class="bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-white/30">
+            <option value="24h" data-i18n="analyze.period_24h">Last 24h</option>
+            <option value="7d" data-i18n="analyze.period_7d">Last 7 days</option>
+            <option value="30d" data-i18n="analyze.period_30d">Last 30 days</option>
+          </select>
+          <button onclick="closeMetricsModal()" class="modal-close">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div id="metrics-loading" class="text-center py-8 text-white/40" data-i18n="analyze.loading_metrics">Loading metrics...</div>
+        <div id="metrics-content" class="hidden">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div class="stat-card accent-teal"><div class="label" data-i18n="analyze.packets_received">Packets</div><div id="mx-packets" class="value">-</div></div>
+            <div class="stat-card accent-red"><div class="label" data-i18n="analyze.errors">Errors</div><div id="mx-errors" class="value">-</div></div>
+            <div class="stat-card accent-blue"><div class="label" data-i18n="analyze.avg_rssi">Avg RSSI</div><div id="mx-rssi" class="value">-</div><div id="mx-rssi-quality" class="text-xs mt-1"></div></div>
+            <div class="stat-card accent-amber"><div class="label" data-i18n="analyze.avg_snr">Avg SNR</div><div id="mx-snr" class="value">-</div><div id="mx-snr-quality" class="text-xs mt-1"></div></div>
+          </div>
+          <div class="panel">
+            <h4 class="text-xs font-medium text-white/50 mb-2" data-i18n="analyze.packets_chart">Packets received</h4>
+            <div id="mx-chart" class="space-y-1 max-h-[400px] overflow-y-auto"></div>
+          </div>
+        </div>
+        <div id="metrics-error" class="hidden text-center py-8 text-red-400"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Modal -->
+  <div id="custom-modal" class="custom-modal hidden">
+    <div class="custom-modal-backdrop"></div>
+    <div class="custom-modal-content">
+      <h3 id="modal-title" class="text-sm font-semibold text-white mb-2"></h3>
+      <p id="modal-message" class="text-xs text-white/60 mb-4"></p>
+      <div id="modal-input-wrap" class="hidden mb-4">
+        <label id="modal-input-label" class="block text-xs text-white/50 mb-1"></label>
+        <input type="text" id="modal-input" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+      </div>
+      <div class="flex justify-end gap-2">
+        <button id="modal-cancel" class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-sm text-white/60 transition-colors">Cancel</button>
+        <button id="modal-confirm" class="px-4 py-2 rounded text-sm font-medium transition-colors">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // Global modal utility — returns a Promise
+  window.showModal = function(options) {
+    return new Promise(function(resolve) {
+      var modal = document.getElementById('custom-modal');
+      var titleEl = document.getElementById('modal-title');
+      var messageEl = document.getElementById('modal-message');
+      var inputWrap = document.getElementById('modal-input-wrap');
+      var inputLabel = document.getElementById('modal-input-label');
+      var inputEl = document.getElementById('modal-input');
+      var cancelBtn = document.getElementById('modal-cancel');
+      var confirmBtn = document.getElementById('modal-confirm');
+      var backdrop = modal.querySelector('.custom-modal-backdrop');
+
+      // Configure
+      titleEl.textContent = options.title || 'Confirmation';
+      messageEl.textContent = options.message || '';
+      messageEl.style.display = options.message ? '' : 'none';
+
+      var isPrompt = options.type === 'prompt' || !!options.inputLabel;
+      var isDanger = options.type === 'danger';
+      var hasExpected = options.expectedValue !== undefined && options.expectedValue !== null;
+
+      // Input field
+      if (isPrompt || hasExpected) {
+        inputWrap.classList.remove('hidden');
+        inputLabel.textContent = options.inputLabel || (hasExpected ? 'Tapez ' + options.expectedValue + ' pour confirmer' : '');
+        inputEl.value = '';
+        inputEl.placeholder = options.inputPlaceholder || (hasExpected ? String(options.expectedValue) : '');
+      } else {
+        inputWrap.classList.add('hidden');
+      }
+
+      // Confirm button style
+      confirmBtn.textContent = options.confirmText || 'Confirm';
+      confirmBtn.className = 'px-4 py-2 rounded text-sm font-medium transition-colors ';
+      if (isDanger) {
+        confirmBtn.className += 'bg-red-600 hover:bg-red-500 text-white';
+      } else {
+        confirmBtn.className += 'bg-blue-600 hover:bg-blue-500 text-white';
+      }
+
+      // Disable confirm if expectedValue and input empty
+      if (hasExpected) {
+        confirmBtn.disabled = true;
+        confirmBtn.classList.add('opacity-30', 'cursor-not-allowed');
+      } else {
+        confirmBtn.disabled = false;
+        confirmBtn.classList.remove('opacity-30', 'cursor-not-allowed');
+      }
+
+      // Show
+      modal.classList.remove('hidden');
+      if (isPrompt || hasExpected) {
+        setTimeout(function() { inputEl.focus(); }, 50);
+      } else {
+        setTimeout(function() { confirmBtn.focus(); }, 50);
+      }
+
+      // Cleanup helper
+      var resolved = false;
+      function close(value) {
+        if (resolved) return;
+        resolved = true;
+        modal.classList.add('hidden');
+        inputEl.removeEventListener('input', onInput);
+        inputEl.removeEventListener('keydown', onInputKey);
+        confirmBtn.removeEventListener('click', onConfirm);
+        cancelBtn.removeEventListener('click', onCancel);
+        backdrop.removeEventListener('click', onCancel);
+        document.removeEventListener('keydown', onEsc);
+        resolve(value);
+      }
+
+      function onCancel() { close(null); }
+
+      function onConfirm() {
+        if (confirmBtn.disabled) return;
+        if (isPrompt || hasExpected) {
+          var val = inputEl.value.trim();
+          if (hasExpected) {
+            close(val === String(options.expectedValue) ? true : null);
+          } else {
+            close(val || null);
+          }
+        } else {
+          close(true);
+        }
+      }
+
+      function onEsc(e) {
+        if (e.key === 'Escape') onCancel();
+      }
+
+      function onInput() {
+        if (hasExpected) {
+          var match = inputEl.value.trim() === String(options.expectedValue);
+          confirmBtn.disabled = !match;
+          if (match) {
+            confirmBtn.classList.remove('opacity-30', 'cursor-not-allowed');
+          } else {
+            confirmBtn.classList.add('opacity-30', 'cursor-not-allowed');
+          }
+        }
+      }
+
+      function onInputKey(e) {
+        if (e.key === 'Enter') onConfirm();
+      }
+
+      confirmBtn.addEventListener('click', onConfirm);
+      cancelBtn.addEventListener('click', onCancel);
+      backdrop.addEventListener('click', onCancel);
+      document.addEventListener('keydown', onEsc);
+      inputEl.addEventListener('input', onInput);
+      inputEl.addEventListener('keydown', onInputKey);
+    });
+  };
+  </script>
+
+  <script>
+  // Tile navigation logic
+  var toolTitleMap = {
+    'export': 'tiles.export',
+    'delete': 'tiles.delete',
+    'migrate': 'tiles.migrate',
+    'change-dp': 'tiles.change_dp',
+    'update-tags': 'tiles.update_tags',
+    'search': 'tiles.search'
+  };
+
+  function showTool(toolName, sectionType) {
+    document.getElementById('tool-tiles').classList.add('hidden');
+
+    if (sectionType === 'import') {
+      document.getElementById('section-import').classList.remove('hidden');
+    } else if (sectionType === 'analyze') {
+      document.getElementById('section-analyze').classList.remove('hidden');
+    } else {
+      document.getElementById('section-bulk').classList.remove('hidden');
+      // Update section title and nav breadcrumb
+      var titleText = document.getElementById('bulk-title-text');
+      var titleInner = document.getElementById('bulk-title-text-inner');
+      if (toolTitleMap[toolName]) {
+        var label = t(toolTitleMap[toolName]);
+        if (titleText) titleText.textContent = label;
+        if (titleInner) titleInner.textContent = label;
+      }
+      // Activate the right tab programmatically
+      var tabBtn = document.querySelector('.bulk-tab[data-tab="' + toolName + '"]');
+      if (tabBtn) tabBtn.click();
+    }
+  }
+
+  function backToTiles() {
+    document.getElementById('tool-tiles').classList.remove('hidden');
+    document.getElementById('section-import').classList.add('hidden');
+    document.getElementById('section-bulk').classList.add('hidden');
+    document.getElementById('section-analyze').classList.add('hidden');
+  }
+
+  // Bind tile clicks
+  document.querySelectorAll('.tool-tile').forEach(function(tile) {
+    tile.addEventListener('click', function() {
+      showTool(tile.dataset.tool, tile.dataset.section);
+    });
+  });
+  </script>
+
+  <script src="search-bar.js"></script>
+  <script src="management-connect.js"></script>
+  <script src="management-import.js"></script>
+  <script src="management-bulk.js"></script>
+  <script src="management-analyze.js"></script>
+</body>
+</html>

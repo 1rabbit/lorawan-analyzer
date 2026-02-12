@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!devAddr) {
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('error').classList.remove('hidden');
-    document.getElementById('error').textContent = 'No device address specified';
+    document.getElementById('error').textContent = t('device.no_addr');
     return;
   }
 
@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   loadDeviceData();
+  initHelpTooltips();
 
   // Time range buttons - sync active state with selectedHours
   document.querySelectorAll('.time-btn').forEach(btn => {
@@ -152,10 +153,10 @@ async function loadDeviceData() {
     // Update header
     const isOwned = isMyDevice(devAddr);
     const opEl = document.getElementById('device-operator');
-    opEl.textContent = profile.operator || 'Unknown';
+    opEl.textContent = profile.operator || t('common.unknown');
     opEl.className = 'text-sm px-2 py-0.5 rounded';
     opEl.style.color = getOperatorColor(profile.operator);
-    document.getElementById('device-ownership').textContent = isOwned ? '(My Device)' : '';
+    document.getElementById('device-ownership').textContent = isOwned ? t('device.my_device') : '';
 
     // Display device metadata if available
     if (profile.device_name) {
@@ -245,7 +246,7 @@ async function loadDeviceData() {
     console.error('Failed to load device data:', e);
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('error').classList.remove('hidden');
-    document.getElementById('error').textContent = 'Failed to load device data';
+    document.getElementById('error').textContent = t('device.failed_load');
   }
 }
 
@@ -671,7 +672,7 @@ async function loadRecentPacketsForDevice() {
         confirmed: p.confirmed,
       };
     });
-    setPacketFeedData(packets);
+    setPacketFeedData(packets, true);
   } catch (e) {
     console.error('Failed to load recent packets for device:', e);
   }
@@ -709,5 +710,97 @@ function formatDateTime(timestamp) {
   const d = parseUTCTimestamp(timestamp);
   return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' +
          d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+// Update chart labels when language changes
+window.addEventListener('langchange', function() {
+  // Update RSSI chart
+  if (rssiChart) {
+    rssiChart.options.scales.y.title.text = 'dBm';
+    rssiChart.data.datasets[0].label = t('chart.rssi_dbm');
+    rssiChart.update('none');
+  }
+
+  // Update SNR chart
+  if (snrChart) {
+    snrChart.options.scales.y.title.text = 'dB';
+    snrChart.data.datasets[0].label = t('chart.snr_db');
+    snrChart.update('none');
+  }
+
+  // Update SF chart
+  if (sfChart) {
+    sfChart.data.datasets[0].label = t('device.packets');
+    sfChart.update('none');
+  }
+
+  // Update Frequency chart
+  if (freqChart) {
+    freqChart.data.datasets[0].label = t('device.packets');
+    freqChart.update('none');
+  }
+
+  // Update FCnt chart
+  if (fcntChart) {
+    fcntChart.options.scales.y.title.text = t('device.frame_counter');
+    fcntChart.data.datasets[0].label = t('chart.fcnt');
+    fcntChart.data.datasets[1].label = t('chart.gaps');
+    fcntChart.update('none');
+  }
+
+  // Update Loss chart
+  if (lossChart) {
+    lossChart.options.scales.y.title.text = t('device.missed_label');
+    lossChart.data.datasets[0].label = t('chart.missed_packets');
+    lossChart.update('none');
+  }
+
+  // Update Interval chart
+  if (intervalChart) {
+    intervalChart.options.scales.y.title.text = t('device.packets');
+    intervalChart.data.datasets[0].label = t('chart.count');
+    intervalChart.update('none');
+  }
+
+  // Reload device data to update all text labels
+  if (devAddr) {
+    loadDeviceData();
+  }
+});
+
+// Help Tooltips
+function initHelpTooltips() {
+  const tooltip = document.getElementById('help-tooltip');
+  let activeBtn = null;
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.help-btn');
+    if (btn) {
+      e.stopPropagation();
+      if (activeBtn === btn) {
+        tooltip.classList.add('hidden');
+        activeBtn = null;
+        return;
+      }
+      const key = btn.dataset.help;
+      tooltip.textContent = t(key);
+      tooltip.classList.remove('hidden');
+      activeBtn = btn;
+
+      const rect = btn.getBoundingClientRect();
+      let top = rect.bottom + 6;
+      let left = rect.left;
+
+      if (left + 340 > window.innerWidth) left = window.innerWidth - 350;
+      if (left < 10) left = 10;
+      if (top + 120 > window.innerHeight) top = rect.top - 6 - tooltip.offsetHeight;
+
+      tooltip.style.top = top + 'px';
+      tooltip.style.left = left + 'px';
+    } else if (!e.target.closest('.help-tooltip')) {
+      tooltip.classList.add('hidden');
+      activeBtn = null;
+    }
+  });
 }
 

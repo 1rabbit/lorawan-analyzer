@@ -7,6 +7,12 @@ let selectedHours = 24;
 let gateways = [];
 let filter = { showOwned: true, showForeign: true, prefixes: [] };
 let operatorColors = {};
+const OPERATOR_PALETTE = [
+  '#22c55e', '#3b82f6', '#a855f7', '#f97316', '#eab308',
+  '#ef4444', '#14b8a6', '#ec4899', '#06b6d4', '#84cc16',
+  '#f43f5e', '#8b5cf6', '#0ea5e9', '#d946ef', '#10b981'
+];
+let operatorColorAssignments = {};
 let deviceSearchText = '';
 let rssiFilterMin = -200;
 let rssiFilterMax = 0;
@@ -188,6 +194,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Re-render device list when favorites change
   window.addEventListener('favorites-changed', () => loadDeviceBreakdown());
 
+  // Help tooltips
+  initHelpTooltips();
+
   // Auto-refresh every 30 seconds
   setInterval(loadAllData, 30000);
 });
@@ -218,8 +227,16 @@ async function loadOperatorColors() {
   }
 }
 
-function getOperatorColor(operator) {
-  return operatorColors[operator] || 'rgba(255, 255, 255, 0.4)';
+function getOperatorColor(operator, index) {
+  // 1) Config-provided color (from config.toml)
+  if (operatorColors[operator]) return operatorColors[operator];
+  // 2) Already assigned palette color
+  if (operatorColorAssignments[operator]) return operatorColorAssignments[operator];
+  // 3) Assign from palette based on index or next available slot
+  const idx = index !== undefined ? index : Object.keys(operatorColorAssignments).length;
+  const color = OPERATOR_PALETTE[idx % OPERATOR_PALETTE.length];
+  operatorColorAssignments[operator] = color;
+  return color;
 }
 
 // Get filter mode and prefixes for API calls
@@ -458,15 +475,15 @@ async function loadTrafficChart() {
   }
 
   const allTimestamps = [...new Set(points.map(p => p.timestamp))].sort();
-  const colors = ['#22c55e', '#3b82f6', '#a855f7', '#f97316', '#eab308', '#ef4444', '#14b8a6'];
 
   const datasets = Object.entries(groups).map(([name, pts], i) => {
     const pointMap = new Map(pts.map(p => [p.timestamp, p.value]));
+    const color = getOperatorColor(name, i);
     return {
       label: name,
       data: allTimestamps.map(t => pointMap.get(t) || 0),
-      borderColor: colors[i % colors.length],
-      backgroundColor: colors[i % colors.length] + '33',
+      borderColor: color,
+      backgroundColor: color + '33',
       fill: true,
       tension: 0.3
     };
@@ -493,28 +510,23 @@ async function loadOperatorChart() {
   operatorChart.data.labels = operators.map(o => o.operator);
   operatorChart.data.datasets = [{
     data: operators.map(o => o.packet_count),
-    backgroundColor: operators.map(o => getOperatorColor(o.operator)),
+    backgroundColor: operators.map((o, i) => getOperatorColor(o.operator, i)),
     borderWidth: 0
   }];
   operatorChart.update('none');
 }
 
 async function loadChannelChart() {
-  if (!selectedGateway) {
-    channelChart.data.labels = [];
-    channelChart.data.datasets = [];
-    channelChart.update('none');
-    return;
-  }
-
   const filterParams = getFilterParams();
   const params = new URLSearchParams({ hours: selectedHours, ...filterParams });
-  const data = await api(`/api/spectrum/${selectedGateway}/channels?${params}`);
+  if (selectedGateway) params.set('gateway_id', selectedGateway);
+
+  const data = await api(`/api/stats/channels?${params}`);
   const channels = data.channels || [];
 
   channelChart.data.labels = channels.map(c => (c.frequency / 1000000).toFixed(1));
   channelChart.data.datasets = [{
-    label: 'Packets',
+    label: t('chart.packets'),
     data: channels.map(c => c.packet_count),
     backgroundColor: channels.map(c =>
       c.usage_percent > 30 ? '#ef4444' : c.usage_percent > 15 ? '#eab308' : '#22c55e'
@@ -525,21 +537,16 @@ async function loadChannelChart() {
 }
 
 async function loadSFChart() {
-  if (!selectedGateway) {
-    sfChart.data.labels = [];
-    sfChart.data.datasets = [];
-    sfChart.update('none');
-    return;
-  }
-
   const filterParams = getFilterParams();
   const params = new URLSearchParams({ hours: selectedHours, ...filterParams });
-  const data = await api(`/api/spectrum/${selectedGateway}/spreading-factors?${params}`);
+  if (selectedGateway) params.set('gateway_id', selectedGateway);
+
+  const data = await api(`/api/stats/spreading-factors?${params}`);
   const sfs = data.spreadingFactors || [];
 
   sfChart.data.labels = sfs.map(s => `SF${s.spreading_factor}`);
   sfChart.data.datasets = [{
-    label: 'Packets',
+    label: t('chart.packets'),
     data: sfs.map(s => s.packet_count),
     backgroundColor: sfs.map(s => {
       const sf = s.spreading_factor;
@@ -595,7 +602,7 @@ async function loadDeviceBreakdown() {
 
     // === Device List Panel ===
     if (devices.length === 0) {
-      deviceListContainer.innerHTML = '<div class="text-gray-500 text-sm text-center py-4">No devices</div>';
+      deviceListContainer.innerHTML = '<div class="text-gray-500 text-sm text-center py-4">' + t('dashboard.no_devices') + '</div>';
     } else {
       // Sort: favorites first, then by packet count descending
       const favs = typeof getFavorites === 'function' ? getFavorites() : [];
@@ -625,7 +632,7 @@ async function loadDeviceBreakdown() {
               <span class="device-operator" style="color: ${opColor}">${d.operator || '?'}</span>
               <span class="device-sf">${sfDisplay}</span>
               <span class="device-interval">${intervalDisplay}</span>
-              <span class="device-packets">${formatNumber(d.packet_count)} pkts</span>
+              <span class="device-packets">${formatNumber(d.packet_count)} ${t('dashboard.pkts')}</span>
             </div>
             <div class="device-detail-stats">
               <div class="device-signal-group">
@@ -651,7 +658,7 @@ async function loadDeviceBreakdown() {
 
     // === By Operator Panel ===
     if (operators.length === 0) {
-      operatorContainer.innerHTML = '<div class="text-gray-500 text-sm text-center py-4">No data</div>';
+      operatorContainer.innerHTML = '<div class="text-gray-500 text-sm text-center py-4">' + t('common.no_data') + '</div>';
     } else {
       const totalDevices = operators.reduce((sum, op) => sum + op.device_count, 0);
       operatorContainer.innerHTML = operators.map(op => {
@@ -660,13 +667,13 @@ async function loadDeviceBreakdown() {
         return `
           <div class="breakdown-row">
             <div class="flex items-center justify-between mb-1">
-              <span class="text-sm font-medium" style="color: ${opColor}">${op.operator || 'Unknown'}</span>
-              <span class="text-xs text-gray-400">${op.device_count} dev</span>
+              <span class="text-sm font-medium" style="color: ${opColor}">${op.operator || t('common.unknown')}</span>
+              <span class="text-xs text-gray-400">${op.device_count} ${t('dashboard.dev')}</span>
             </div>
             <div class="breakdown-bar">
               <div class="breakdown-bar-fill" style="width: ${pct}%; background: ${opColor}"></div>
             </div>
-            <div class="text-xs text-gray-500 mt-1">${formatNumber(op.packet_count)} pkts · ${formatAirtime(op.airtime_ms)}</div>
+            <div class="text-xs text-gray-500 mt-1">${formatNumber(op.packet_count)} ${t('dashboard.pkts')} · ${formatAirtime(op.airtime_ms)}</div>
           </div>
         `;
       }).join('');
@@ -685,39 +692,39 @@ async function loadDeviceBreakdown() {
 
     summaryContainer.innerHTML = `
       <div class="summary-section">
-        <div class="summary-title">Ownership</div>
+        <div class="summary-title">${t('dashboard.ownership')}</div>
         <div class="summary-row">
-          <span class="text-blue-400">Mine</span>
+          <span class="text-blue-400">${t('dashboard.mine')}</span>
           <span class="text-blue-400 font-bold">${myDevices.length}</span>
         </div>
         <div class="summary-row">
-          <span class="text-gray-400">Unknown</span>
+          <span class="text-gray-400">${t('common.unknown')}</span>
           <span class="text-gray-400 font-bold">${unknownDevices.length}</span>
         </div>
       </div>
       <div class="summary-section">
-        <div class="summary-title">Activity</div>
+        <div class="summary-title">${t('dashboard.activity')}</div>
         <div class="summary-row">
-          <span class="text-green-400">High (100+)</span>
+          <span class="text-green-400">${t('dashboard.high_activity')}</span>
           <span class="text-green-400 font-bold">${highActivity}</span>
         </div>
         <div class="summary-row">
-          <span class="text-yellow-400">Med (10-99)</span>
+          <span class="text-yellow-400">${t('dashboard.med_activity')}</span>
           <span class="text-yellow-400 font-bold">${medActivity}</span>
         </div>
         <div class="summary-row">
-          <span class="text-gray-500">Low (&lt;10)</span>
+          <span class="text-gray-500">${t('dashboard.low_activity')}</span>
           <span class="text-gray-500 font-bold">${lowActivity}</span>
         </div>
       </div>
       <div class="summary-section">
-        <div class="summary-title">Totals</div>
+        <div class="summary-title">${t('dashboard.totals')}</div>
         <div class="summary-row">
-          <span>Devices</span>
+          <span>${t('dashboard.devices')}</span>
           <span class="font-bold">${devices.length}</span>
         </div>
         <div class="summary-row">
-          <span>Packets</span>
+          <span>${t('dashboard.packets')}</span>
           <span class="font-bold">${formatNumber(totalPackets)}</span>
         </div>
       </div>
@@ -725,9 +732,9 @@ async function loadDeviceBreakdown() {
 
   } catch (e) {
     console.error('Device breakdown error:', e);
-    deviceListContainer.innerHTML = '<div class="text-red-500 text-sm">Failed to load</div>';
-    operatorContainer.innerHTML = '<div class="text-red-500 text-sm">Failed to load</div>';
-    summaryContainer.innerHTML = '<div class="text-red-500 text-sm">Failed to load</div>';
+    deviceListContainer.innerHTML = '<div class="text-red-500 text-sm">' + t('common.failed_to_load') + '</div>';
+    operatorContainer.innerHTML = '<div class="text-red-500 text-sm">' + t('common.failed_to_load') + '</div>';
+    summaryContainer.innerHTML = '<div class="text-red-500 text-sm">' + t('common.failed_to_load') + '</div>';
   }
 }
 
@@ -770,7 +777,7 @@ async function loadRecentJoins() {
     const joins = data.joins || [];
 
     if (joins.length === 0) {
-      container.innerHTML = '<div class="text-gray-500 text-sm text-center py-4">No join requests</div>';
+      container.innerHTML = '<div class="text-gray-500 text-sm text-center py-4">' + t('dashboard.no_join_requests') + '</div>';
       return;
     }
 
@@ -781,7 +788,7 @@ async function loadRecentJoins() {
       </div>
     `).join('');
   } catch (e) {
-    container.innerHTML = '<div class="text-red-500 text-sm">Failed to load</div>';
+    container.innerHTML = '<div class="text-red-500 text-sm">' + t('common.failed_to_load') + '</div>';
   }
 }
 
@@ -820,7 +827,7 @@ function openDeviceModal(devAddr) {
   const body = document.getElementById('modal-device-body');
 
   header.textContent = devAddr;
-  body.innerHTML = '<div class="text-gray-500 text-center py-8">Loading...</div>';
+  body.innerHTML = '<div class="text-gray-500 text-center py-8">' + t('common.loading') + '</div>';
   modal.classList.remove('hidden');
 
   // Fetch all device data
@@ -837,7 +844,7 @@ function openDeviceModal(devAddr) {
     const activity = activityRes.activity || [];
 
     if (!profile) {
-      body.innerHTML = '<div class="text-gray-500 text-center py-8">No data found</div>';
+      body.innerHTML = '<div class="text-gray-500 text-center py-8">' + t('modal.no_data_found') + '</div>';
       return;
     }
 
@@ -859,77 +866,77 @@ function openDeviceModal(devAddr) {
         <div class="modal-stats">
           <div class="modal-stat-card ${isOwned ? 'mine' : ''}">
             <div class="stat-row">
-              <span class="stat-label">Operator</span>
-              <span class="font-medium" style="color: ${opColor}">${profile.operator || 'Unknown'}</span>
+              <span class="stat-label">${t('modal.operator')}</span>
+              <span class="font-medium" style="color: ${opColor}">${profile.operator || t('common.unknown')}</span>
             </div>
             <div class="stat-row">
-              <span class="stat-label">Packets</span>
+              <span class="stat-label">${t('modal.packets')}</span>
               <span class="font-bold">${formatNumber(profile.packet_count)}</span>
             </div>
             <div class="stat-row">
-              <span class="stat-label">Total Airtime</span>
+              <span class="stat-label">${t('modal.total_airtime')}</span>
               <span>${formatAirtime(profile.total_airtime_ms || 0)}</span>
             </div>
             <div class="stat-row">
-              <span class="stat-label">Avg Interval</span>
+              <span class="stat-label">${t('modal.avg_interval')}</span>
               <span>${avgInterval > 0 ? formatInterval(avgInterval) : '—'}</span>
             </div>
             <div class="stat-row">
-              <span class="stat-label">First Seen</span>
+              <span class="stat-label">${t('modal.first_seen')}</span>
               <span class="text-xs">${formatDateTime(profile.first_seen)}</span>
             </div>
             <div class="stat-row">
-              <span class="stat-label">Last Seen</span>
+              <span class="stat-label">${t('modal.last_seen')}</span>
               <span class="text-xs">${formatDateTime(profile.last_seen)}</span>
             </div>
           </div>
 
           <div class="modal-stat-card">
-            <div class="stat-header">Signal Quality</div>
+            <div class="stat-header">${t('modal.signal_quality')}</div>
             <div class="stat-row">
-              <span class="stat-label">Avg RSSI</span>
+              <span class="stat-label">${t('modal.avg_rssi')}</span>
               <span class="${profile.avg_rssi > -100 ? 'good' : profile.avg_rssi > -115 ? 'medium' : 'bad'}">${profile.avg_rssi?.toFixed(1) || '?'} dBm</span>
             </div>
             <div class="stat-row">
-              <span class="stat-label">Avg SNR</span>
+              <span class="stat-label">${t('modal.avg_snr')}</span>
               <span class="${profile.avg_snr > 5 ? 'good' : profile.avg_snr > 0 ? 'medium' : 'bad'}">${profile.avg_snr?.toFixed(1) || '?'} dB</span>
             </div>
           </div>
 
           <div class="modal-stat-card">
-            <div class="stat-header">Spreading Factors</div>
+            <div class="stat-header">${t('modal.spreading_factors')}</div>
             ${(dist.spreadingFactors || []).map(sf => `
               <div class="stat-row">
                 <span class="stat-label">SF${sf.spreading_factor}</span>
                 <span>${sf.packet_count} (${sf.percentage?.toFixed(0) || 0}%)</span>
               </div>
-            `).join('') || '<div class="text-gray-500 text-sm">No data</div>'}
+            `).join('') || '<div class="text-gray-500 text-sm">' + t('common.no_data') + '</div>'}
           </div>
 
           <div class="modal-stat-card">
-            <div class="stat-header">Frequencies</div>
+            <div class="stat-header">${t('modal.frequencies')}</div>
             ${(dist.frequencies || []).slice(0, 5).map(f => `
               <div class="stat-row">
                 <span class="stat-label">${(f.frequency / 1000000).toFixed(1)} MHz</span>
                 <span>${f.packet_count} (${f.percentage?.toFixed(0) || 0}%)</span>
               </div>
-            `).join('') || '<div class="text-gray-500 text-sm">No data</div>'}
+            `).join('') || '<div class="text-gray-500 text-sm">' + t('common.no_data') + '</div>'}
           </div>
         </div>
 
         <!-- Right Column: Chart -->
         <div class="modal-chart-area">
-          <div class="stat-header">Signal (per uplink)</div>
+          <div class="stat-header">${t('modal.signal_per_uplink')}</div>
           <div class="modal-chart-container">
             <canvas id="device-signal-chart"></canvas>
           </div>
 
-          <div class="stat-header mt-4">Uplinks over Time</div>
+          <div class="stat-header mt-4">${t('modal.uplinks_over_time')}</div>
           <div class="modal-chart-container">
             <canvas id="device-uplink-chart"></canvas>
           </div>
 
-          <div class="stat-header mt-4">Recent Activity</div>
+          <div class="stat-header mt-4">${t('modal.recent_activity')}</div>
           <div class="modal-activity-list">
             ${recentPackets.slice(-20).reverse().map(p => `
               <div class="activity-entry">
@@ -938,7 +945,7 @@ function openDeviceModal(devAddr) {
                 <span class="${p.rssi > -100 ? 'good' : p.rssi > -115 ? 'medium' : 'bad'}">${p.rssi} dBm</span>
                 <span class="${p.snr > 5 ? 'good' : p.snr > 0 ? 'medium' : 'bad'}">${p.snr?.toFixed(1)} dB</span>
               </div>
-            `).join('') || '<div class="text-gray-500 text-sm">No recent activity</div>'}
+            `).join('') || '<div class="text-gray-500 text-sm">' + t('modal.no_recent_activity') + '</div>'}
           </div>
         </div>
       </div>
@@ -958,7 +965,7 @@ function openDeviceModal(devAddr) {
         data: {
           datasets: [
             {
-              label: 'RSSI',
+              label: t('feed.rssi'),
               data: signalData,
               borderColor: '#3b82f6',
               backgroundColor: '#3b82f6',
@@ -969,7 +976,7 @@ function openDeviceModal(devAddr) {
               yAxisID: 'y'
             },
             {
-              label: 'SNR',
+              label: t('feed.snr'),
               data: snrData,
               borderColor: '#22c55e',
               backgroundColor: '#22c55e',
@@ -998,14 +1005,14 @@ function openDeviceModal(devAddr) {
               position: 'left',
               ticks: { color: '#3b82f6' },
               grid: { color: '#374151' },
-              title: { display: true, text: 'RSSI (dBm)', color: '#3b82f6' }
+              title: { display: true, text: t('chart.rssi_dbm'), color: '#3b82f6' }
             },
             y1: {
               type: 'linear',
               position: 'right',
               ticks: { color: '#22c55e' },
               grid: { drawOnChartArea: false },
-              title: { display: true, text: 'SNR (dB)', color: '#22c55e' }
+              title: { display: true, text: t('chart.snr_db'), color: '#22c55e' }
             }
           }
         }
@@ -1021,7 +1028,7 @@ function openDeviceModal(devAddr) {
         type: 'bar',
         data: {
           datasets: [{
-            label: 'Uplink',
+            label: t('feed.uplink'),
             data: uplinkData,
             backgroundColor: '#8b5cf6',
             barThickness: 2
@@ -1050,7 +1057,7 @@ function openDeviceModal(devAddr) {
     }
   }).catch(e => {
     console.error('Failed to load device details:', e);
-    body.innerHTML = '<div class="text-red-500 text-center py-8">Failed to load device data</div>';
+    body.innerHTML = '<div class="text-red-500 text-center py-8">' + t('modal.failed_load') + '</div>';
   });
 }
 
@@ -1082,4 +1089,80 @@ function formatInterval(seconds) {
 // Close modal on Escape key
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeDeviceModal();
+});
+
+// Help Tooltips
+function initHelpTooltips() {
+  const tooltip = document.getElementById('help-tooltip');
+  let activeBtn = null;
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.help-btn');
+    if (btn) {
+      e.stopPropagation();
+      if (activeBtn === btn) {
+        tooltip.classList.add('hidden');
+        activeBtn = null;
+        return;
+      }
+      const key = btn.dataset.help;
+      tooltip.textContent = t(key);
+      tooltip.classList.remove('hidden');
+      activeBtn = btn;
+
+      // Position near the button
+      const rect = btn.getBoundingClientRect();
+      let top = rect.bottom + 6;
+      let left = rect.left;
+
+      // Keep within viewport
+      if (left + 340 > window.innerWidth) left = window.innerWidth - 350;
+      if (left < 10) left = 10;
+      if (top + 120 > window.innerHeight) top = rect.top - 6 - tooltip.offsetHeight;
+
+      tooltip.style.top = top + 'px';
+      tooltip.style.left = left + 'px';
+    } else if (!e.target.closest('.help-tooltip')) {
+      tooltip.classList.add('hidden');
+      activeBtn = null;
+    }
+  });
+}
+
+// Update chart labels when language changes
+window.addEventListener('langchange', function() {
+  // Update Traffic chart dataset labels (keep operator names as-is)
+  if (trafficChart && trafficChart.data.datasets.length > 0) {
+    trafficChart.update('none');
+  }
+
+  // Update Channel chart
+  if (channelChart && channelChart.data.datasets.length > 0) {
+    channelChart.data.datasets[0].label = t('chart.packets');
+    channelChart.update('none');
+  }
+
+  // Update SF chart
+  if (sfChart && sfChart.data.datasets.length > 0) {
+    sfChart.data.datasets[0].label = t('chart.packets');
+    sfChart.update('none');
+  }
+
+  // Update modal charts if they exist
+  if (deviceSignalChart) {
+    deviceSignalChart.data.datasets[0].label = t('feed.rssi');
+    deviceSignalChart.data.datasets[1].label = t('feed.snr');
+    deviceSignalChart.options.scales.y.title.text = t('chart.rssi_dbm');
+    deviceSignalChart.options.scales.y1.title.text = t('chart.snr_db');
+    deviceSignalChart.update('none');
+  }
+
+  if (deviceUplinkChart) {
+    deviceUplinkChart.data.datasets[0].label = t('feed.uplink');
+    deviceUplinkChart.update('none');
+  }
+
+  // Re-render all dynamic content
+  loadDeviceBreakdown();
+  loadRecentJoins();
 });

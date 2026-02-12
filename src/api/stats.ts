@@ -10,6 +10,7 @@ import {
   getRecentPackets,
   type DeviceFilter,
 } from '../db/queries.js';
+import { getMetadataCache } from './index.js';
 
 // Parse prefixes string into DeviceFilter
 function parseDeviceFilter(filterMode: string, prefixes?: string): DeviceFilter | undefined {
@@ -67,6 +68,19 @@ export async function statsRoutes(fastify: FastifyInstance): Promise<void> {
     const rssiMin = request.query.rssi_min ? parseInt(request.query.rssi_min, 10) : undefined;
     const rssiMax = request.query.rssi_max ? parseInt(request.query.rssi_max, 10) : undefined;
     const packets = await getRecentPackets(limit, request.query.gateway_id, deviceFilter, packetTypes, devAddr, hours, rssiMin, rssiMax);
+    // Enrich with device metadata (name, dev_eui for uplinks)
+    const cache = getMetadataCache();
+    if (cache) {
+      for (const p of packets) {
+        if (p.dev_addr) {
+          const meta = cache.getByDevAddr(p.dev_addr);
+          if (meta) {
+            (p as any).device_name = meta.device_name;
+            if (!p.dev_eui && meta.dev_eui) (p as any).dev_eui = meta.dev_eui;
+          }
+        }
+      }
+    }
     return { packets };
   });
 
@@ -134,7 +148,29 @@ export async function statsRoutes(fastify: FastifyInstance): Promise<void> {
     return { stats };
   });
 
-  // Get channel distribution for a gateway
+  // Get channel distribution (all gateways or specific)
+  fastify.get<{
+    Querystring: { hours?: string; filter_mode?: string; prefixes?: string; gateway_id?: string };
+  }>('/api/stats/channels', async (request) => {
+    const hours = parseInt(request.query.hours ?? '24', 10);
+    const filterMode = request.query.filter_mode || 'all';
+    const deviceFilter = parseDeviceFilter(filterMode, request.query.prefixes);
+    const channels = await getChannelDistribution(request.query.gateway_id || null, hours, deviceFilter);
+    return { channels };
+  });
+
+  // Get spreading factor distribution (all gateways or specific)
+  fastify.get<{
+    Querystring: { hours?: string; filter_mode?: string; prefixes?: string; gateway_id?: string };
+  }>('/api/stats/spreading-factors', async (request) => {
+    const hours = parseInt(request.query.hours ?? '24', 10);
+    const filterMode = request.query.filter_mode || 'all';
+    const deviceFilter = parseDeviceFilter(filterMode, request.query.prefixes);
+    const spreadingFactors = await getSFDistribution(request.query.gateway_id || null, hours, deviceFilter);
+    return { spreadingFactors };
+  });
+
+  // Get channel distribution for a gateway (legacy endpoint)
   fastify.get<{
     Params: { gatewayId: string };
     Querystring: { hours?: string; filter_mode?: string; prefixes?: string };
@@ -146,7 +182,7 @@ export async function statsRoutes(fastify: FastifyInstance): Promise<void> {
     return { channels };
   });
 
-  // Get spreading factor distribution for a gateway
+  // Get spreading factor distribution for a gateway (legacy endpoint)
   fastify.get<{
     Params: { gatewayId: string };
     Querystring: { hours?: string; filter_mode?: string; prefixes?: string };

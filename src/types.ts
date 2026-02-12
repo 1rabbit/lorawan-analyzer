@@ -227,3 +227,51 @@ export interface DistributionItem {
   value: number;
   count: number;
 }
+
+// ============================================
+// Import / Device Management Types
+// ============================================
+
+export interface ImportProfile {
+  id: string;
+  name: string;
+  required_tags: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChirpStackServer {
+  id: string;
+  name: string;
+  url: string;
+  created_at: string;
+}
+
+export interface ImportResult {
+  created: string[];
+  skipped: string[];
+  errors: Array<{ dev_eui: string; message: string }>;
+  total: number;
+}
+
+export interface CsvParseResult {
+  columns: string[];
+  separator: string;
+  auto_mapping: Record<string, string>;
+  preview: Record<string, string>[];
+  total_rows: number;
+}
+
+export interface ValidationResult {
+  valid: number;
+  errors: Array<{ row: number; field: string; message: string }>;
+  duplicates: Array<{ dev_eui: string; existing_name: string; csv_name: string }>;
+  warnings: string[];
+}
+
+export interface ChirpStackError {
+  status: number;
+  code: string;
+  message: string;
+  detail?: string;
+}

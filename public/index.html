@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LoRaWAN Analyzer</title>
+  <title data-i18n="dashboard.title">LoRaWAN Analyzer</title>
+  <script src="i18n.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
@@ -12,20 +13,30 @@
 <body class="text-gray-100 min-h-screen">
   <div class="flex flex-col h-screen">
     <!-- Header -->
-    <header class="bg-white/5 border-b border-white/10 px-6 py-2 flex-shrink-0">
-      <div class="flex items-center justify-between">
+    <header class="bg-white/5 border-b border-white/10 flex-shrink-0">
+      <!-- Row 1: Navigation -->
+      <div class="flex items-center justify-between px-6 py-2">
         <div class="flex items-center gap-6">
-          <h1 class="text-base font-bold text-white">LoRaWAN Analyzer</h1>
-          <!-- Navigation -->
+          <h1 class="text-base font-bold text-white" data-i18n="nav.title">LoRaWAN Analyzer</h1>
           <nav class="flex gap-1">
-            <a href="index.html" class="nav-link active px-3 py-1 rounded text-sm">Dashboard</a>
-            <a href="live.html" class="nav-link px-3 py-1 rounded text-sm">Live Stream</a>
-            <a href="settings.html" class="nav-link px-3 py-1 rounded text-sm">Settings</a>
+            <a href="index.html" class="nav-link active px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><span data-i18n="nav.dashboard">Dashboard</span></a>
+            <a href="live.html" class="nav-link px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="1" fill="currentColor"/><path d="M8.6 15.4a5 5 0 010-6.8M15.4 8.6a5 5 0 010 6.8"/></svg><span data-i18n="nav.live">Live Stream</span></a>
+            <a href="management.html" class="nav-link px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg><span data-i18n="nav.toolkit">Toolkit ChirpStack</span></a>
+            <a href="settings.html" class="nav-link px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M2 14h4M10 8h4M18 16h4"/></svg><span data-i18n="nav.settings">Settings</span></a>
           </nav>
-          <div class="border-l border-white/20 h-4"></div>
+        </div>
+        <div class="flex items-center gap-1 border border-white/20 rounded overflow-hidden">
+          <button class="lang-btn px-2 py-0.5 text-xs" data-lang="en">EN</button>
+          <button class="lang-btn px-2 py-0.5 text-xs" data-lang="fr">FR</button>
+        </div>
+      </div>
+      <!-- Row 2: Toolbar -->
+      <div class="flex items-center justify-between px-6 py-1.5 border-t border-white/5">
+        <div class="flex items-center gap-4">
           <div id="global-search"></div>
           <div class="border-l border-white/20 h-4"></div>
-          <input type="text" id="device-search" placeholder="Filter list..." class="bg-white/10 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/40 w-32 focus:outline-none focus:border-white/40">
+          <input type="text" id="device-search" data-i18n-placeholder="dashboard.filter_list" placeholder="Filter list..." class="bg-white/10 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/40 w-32 focus:outline-none focus:border-white/40">
+          <div class="border-l border-white/20 h-4"></div>
           <div class="flex items-center gap-1 text-xs text-white/60">
             <span>RSSI</span>
             <div class="rssi-range-wrap">
@@ -36,9 +47,8 @@
           </div>
         </div>
         <div class="flex items-center gap-4">
-          <!-- Time Range -->
           <div class="flex items-center gap-2">
-            <span class="text-white/50 text-sm">Time:</span>
+            <span class="text-white/50 text-sm" data-i18n="dashboard.time">Time:</span>
             <div class="flex gap-1">
               <button class="time-btn px-2 py-1 rounded text-xs" data-hours="1">1h</button>
               <button class="time-btn px-2 py-1 rounded text-xs" data-hours="6">6h</button>
@@ -46,10 +56,10 @@
               <button class="time-btn px-2 py-1 rounded text-xs" data-hours="168">7d</button>
             </div>
           </div>
-          <!-- Device Filter -->
+          <div class="border-l border-white/20 h-4"></div>
           <div class="flex items-center gap-2">
-            <button id="toggle-owned" class="toggle-btn active px-2 py-1 rounded text-xs">My Devices</button>
-            <button id="toggle-foreign" class="toggle-btn active px-2 py-1 rounded text-xs">Unknown Devices</button>
+            <button id="toggle-owned" class="toggle-btn active px-2 py-1 rounded text-xs" data-i18n="dashboard.my_devices">My Devices</button>
+            <button id="toggle-foreign" class="toggle-btn active px-2 py-1 rounded text-xs" data-i18n="dashboard.unknown_devices">Unknown Devices</button>
           </div>
         </div>
       </div>
@@ -60,7 +70,7 @@
       <!-- Gateway Tabs -->
       <div class="bg-white/5 border-b border-white/10 px-6 flex-shrink-0">
         <div class="flex items-center gap-1 py-1 overflow-x-auto">
-          <button class="gateway-tab active px-3 py-1 rounded text-xs" data-gateway="">All Gateways</button>
+          <button class="gateway-tab active px-3 py-1 rounded text-xs" data-gateway="" data-i18n="dashboard.all_gateways">All Gateways</button>
           <div id="gateway-tabs" class="flex gap-1"></div>
         </div>
       </div>
@@ -71,36 +81,36 @@
         <div class="p-6">
           <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4 mb-6">
             <!-- Stats Cards -->
-            <div class="stat-card">
-              <div class="label">Packets</div>
+            <div class="stat-card accent-teal">
+              <div class="label"><span data-i18n="dashboard.packets">Packets</span><button class="help-btn" data-help="help.packets">?</button></div>
               <div id="stat-packets" class="value">-</div>
             </div>
-            <div class="stat-card">
-              <div class="label">Active Devices</div>
+            <div class="stat-card accent-blue">
+              <div class="label"><span data-i18n="dashboard.active_devices">Active Devices</span><button class="help-btn" data-help="help.active_devices">?</button></div>
               <div id="stat-devices" class="value">-</div>
             </div>
-            <div class="stat-card">
-              <div class="label">Total Airtime</div>
+            <div class="stat-card accent-amber">
+              <div class="label"><span data-i18n="dashboard.total_airtime">Total Airtime</span><button class="help-btn" data-help="help.total_airtime">?</button></div>
               <div id="stat-airtime" class="value">-</div>
             </div>
-            <div class="stat-card">
-              <div class="label">RX Airtime</div>
+            <div class="stat-card accent-orange">
+              <div class="label"><span data-i18n="dashboard.rx_airtime">RX Airtime</span><button class="help-btn" data-help="help.rx_airtime">?</button></div>
               <div id="stat-rx-airtime" class="value">-</div>
             </div>
-            <div class="stat-card">
-              <div class="label">TX Duty Cycle</div>
+            <div class="stat-card accent-purple">
+              <div class="label"><span data-i18n="dashboard.tx_duty_cycle">TX Duty Cycle</span><button class="help-btn" data-help="help.tx_duty_cycle">?</button></div>
               <div id="stat-tx-duty" class="value">-</div>
             </div>
-            <div class="stat-card">
-              <div class="label">Downlinks</div>
+            <div class="stat-card accent-blue">
+              <div class="label"><span data-i18n="dashboard.downlinks">Downlinks</span><button class="help-btn" data-help="help.downlinks">?</button></div>
               <div id="stat-downlinks" class="value">-</div>
             </div>
-            <div class="stat-card">
-              <div class="label">TX ACK OK</div>
+            <div class="stat-card accent-green">
+              <div class="label"><span data-i18n="dashboard.tx_ack_ok">TX ACK OK</span><button class="help-btn" data-help="help.tx_ack_ok">?</button></div>
               <div id="stat-ack-ok" class="value">-</div>
             </div>
-            <div class="stat-card">
-              <div class="label">TX ACK Fail</div>
+            <div class="stat-card accent-red">
+              <div class="label"><span data-i18n="dashboard.tx_ack_fail">TX ACK Fail</span><button class="help-btn" data-help="help.tx_ack_fail">?</button></div>
               <div id="stat-ack-fail" class="value">-</div>
             </div>
           </div>
@@ -109,14 +119,14 @@
           <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
             <!-- Traffic Chart -->
             <div class="chart-card">
-              <h3 class="chart-title">Traffic Over Time</h3>
+              <h3 class="chart-title"><span data-i18n="dashboard.traffic_over_time">Traffic Over Time</span><button class="help-btn" data-help="help.traffic_over_time">?</button></h3>
               <div class="h-64">
                 <canvas id="traffic-chart"></canvas>
               </div>
             </div>
             <!-- Operator Chart -->
             <div class="chart-card">
-              <h3 class="chart-title">By Operator</h3>
+              <h3 class="chart-title"><span data-i18n="dashboard.by_operator">By Operator</span><button class="help-btn" data-help="help.by_operator">?</button></h3>
               <div class="h-64">
                 <canvas id="operator-chart"></canvas>
               </div>
@@ -127,33 +137,33 @@
           <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
             <!-- Channel Usage -->
             <div class="panel">
-              <h3 class="panel-title">Channel Usage</h3>
+              <h3 class="panel-title"><span data-i18n="dashboard.channel_usage">Channel Usage</span><button class="help-btn" data-help="help.channel_usage">?</button></h3>
               <div class="h-48">
                 <canvas id="channel-chart"></canvas>
               </div>
             </div>
             <!-- Spreading Factor -->
             <div class="panel">
-              <h3 class="panel-title">Spreading Factor</h3>
+              <h3 class="panel-title"><span data-i18n="dashboard.spreading_factor">Spreading Factor</span><button class="help-btn" data-help="help.spreading_factor">?</button></h3>
               <div class="h-48">
                 <canvas id="sf-chart"></canvas>
               </div>
             </div>
             <!-- By Operator -->
             <div class="panel">
-              <h3 class="panel-title">By Operator</h3>
+              <h3 class="panel-title"><span data-i18n="dashboard.by_operator">By Operator</span><button class="help-btn" data-help="help.by_operator">?</button></h3>
               <div id="breakdown-operator" class="space-y-1 max-h-48 overflow-y-auto"></div>
             </div>
             <!-- Recent Joins -->
             <div class="panel">
-              <h3 class="panel-title">Recent Joins</h3>
+              <h3 class="panel-title"><span data-i18n="dashboard.recent_joins">Recent Joins</span><button class="help-btn" data-help="help.recent_joins">?</button></h3>
               <div id="recent-joins" class="space-y-1 max-h-48 overflow-y-auto"></div>
             </div>
           </div>
 
           <!-- Devices List -->
           <div class="panel">
-            <h3 class="panel-title">Devices</h3>
+            <h3 class="panel-title"><span data-i18n="dashboard.devices">Devices</span><button class="help-btn" data-help="help.devices">?</button></h3>
             <div id="device-list" class="space-y-1 max-h-[500px] overflow-y-auto"></div>
           </div>
 
@@ -177,6 +187,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Help Tooltip -->
+  <div id="help-tooltip" class="help-tooltip hidden"></div>
 
   <script src="search-bar.js"></script>
   <script src="dashboard.js"></script>

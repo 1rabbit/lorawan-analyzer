@@ -73,6 +73,22 @@ bind = "0.0.0.0:3000"
 # url = "http://chirpstack:8080"
 # api_key = "your-api-key-here"
 
+# --- Device Management (management.html) ---
+# The management page provides import/export/bulk operations for ChirpStack devices.
+# It connects directly to ChirpStack via the built-in proxy (/proxy/*).
+# No server-side configuration is needed — the ChirpStack URL and API token
+# are provided by the user in the browser.
+#
+# Features:
+#   - Import devices from CSV/XLSX files
+#   - Export devices to CSV/XLSX
+#   - Bulk delete, migrate, change device profile, update tags
+#   - Cross-application device search
+#   - Import profiles with required tags
+#   - Saved ChirpStack server bookmarks (stored in ClickHouse)
+#
+# Access: http://localhost:15337/management.html
+
 # --- Multiplex MQTT setup (advanced) ---
 # If you enabled the bundled mosquitto broker (docker compose --profile multiplex up),
 # you can bridge multiple ChirpStack MQTT sources into it and point the analyzer there:

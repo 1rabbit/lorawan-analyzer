@@ -52,7 +52,7 @@
 
     container.innerHTML = `
       <div class="global-search-wrap">
-        <input type="text" id="global-search-input" placeholder="Search devices..."
+        <input type="text" id="global-search-input" placeholder="${t('search.placeholder')}"
                class="bg-white/10 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/40 w-48 focus:outline-none focus:border-white/40 focus:w-64 transition-all">
         <div id="global-search-dropdown" class="global-search-dropdown hidden"></div>
       </div>
@@ -103,6 +103,14 @@
     });
 
     loadDevices();
+
+    // Re-translate on language change
+    window.addEventListener('langchange', () => {
+      input.placeholder = t('search.placeholder');
+      // Re-render dropdown if open
+      const q = input.value.trim().toLowerCase();
+      if (q.length >= 1 && searchOpen) showResults(q);
+    });
   }
 
   function isInputFocused() {
@@ -180,7 +188,7 @@
     results = results.slice(0, 15);
 
     if (results.length === 0) {
-      dropdown.innerHTML = '<div class="search-no-results">No devices found</div>';
+      dropdown.innerHTML = `<div class="search-no-results">${t('search.no_results')}</div>`;
     } else {
       dropdown.innerHTML = results.map((d, i) => {
         const isFav = favorites.includes(d.dev_addr);
@@ -196,7 +204,7 @@
           : '';
         return `
           <div class="search-result-item${i === 0 ? ' selected' : ''}" data-addr="${d.dev_addr}" onclick="window.location.href='device.html?addr=${d.dev_addr}'">
-            <button class="${starClass}" onclick="toggleFavorite('${d.dev_addr}', event)" title="Toggle favorite">&#9733;</button>
+            <button class="${starClass}" onclick="toggleFavorite('${d.dev_addr}', event)" title="${t('search.toggle_favorite')}">&#9733;</button>
             <span class="search-result-addr">${d.dev_addr}</span>
             ${nameHtml}${euiHtml}${opHtml}
           </div>`;

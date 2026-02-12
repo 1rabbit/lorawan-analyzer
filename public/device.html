@@ -3,141 +3,177 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Device Details - LoRaWAN Analyzer</title>
+  <title data-i18n="device.title">Device Details - LoRaWAN Analyzer</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
   <link rel="stylesheet" href="style.css">
+  <script src="i18n.js"></script>
 </head>
 <body class="text-gray-100 min-h-screen">
   <div class="flex flex-col h-screen">
     <!-- Header -->
-    <header class="bg-white/5 border-b border-white/10 px-6 py-2 flex-shrink-0">
-      <div class="flex items-center justify-between">
+    <header class="bg-white/5 border-b border-white/10 flex-shrink-0">
+      <!-- Row 1: Navigation -->
+      <div class="flex items-center justify-between px-6 py-2">
         <div class="flex items-center gap-6">
-          <h1 class="text-base font-bold text-white">LoRaWAN Analyzer</h1>
-          <!-- Navigation -->
+          <h1 class="text-base font-bold text-white" data-i18n="nav.title">LoRaWAN Analyzer</h1>
           <nav class="flex gap-1">
-            <a href="index.html" class="nav-link px-3 py-1 rounded text-sm">Dashboard</a>
-            <a href="live.html" class="nav-link px-3 py-1 rounded text-sm">Live Stream</a>
-            <a href="settings.html" class="nav-link px-3 py-1 rounded text-sm">Settings</a>
-            <span class="nav-link active px-3 py-1 rounded text-sm">Device</span>
+            <a href="index.html" class="nav-link px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><span data-i18n="nav.dashboard">Dashboard</span></a>
+            <a href="live.html" class="nav-link px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="1" fill="currentColor"/><path d="M8.6 15.4a5 5 0 010-6.8M15.4 8.6a5 5 0 010 6.8"/></svg><span data-i18n="nav.live">Live Stream</span></a>
+            <a href="management.html" class="nav-link px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg><span data-i18n="nav.toolkit">Toolkit ChirpStack</span></a>
+            <a href="settings.html" class="nav-link px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M2 14h4M10 8h4M18 16h4"/></svg><span data-i18n="nav.settings">Settings</span></a>
+            <span class="nav-link active px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/></svg><span data-i18n="nav.device">Device</span></span>
           </nav>
-          <div class="border-l border-white/20 h-4"></div>
+        </div>
+        <div class="flex items-center gap-1 border border-white/20 rounded overflow-hidden">
+          <button class="lang-btn px-2 py-0.5 text-xs" data-lang="en">EN</button>
+          <button class="lang-btn px-2 py-0.5 text-xs" data-lang="fr">FR</button>
+        </div>
+      </div>
+      <!-- Row 2: Toolbar -->
+      <div class="flex items-center justify-between px-6 py-1.5 border-t border-white/5">
+        <div class="flex items-center gap-4">
           <div id="global-search"></div>
         </div>
-        <div class="flex items-center gap-4">
-          <!-- Time Range -->
-          <div class="flex items-center gap-2">
-            <span class="text-white/50 text-sm">Time:</span>
-            <div class="flex gap-1">
-              <button class="time-btn px-2 py-1 rounded text-xs" data-hours="1">1h</button>
-              <button class="time-btn px-2 py-1 rounded text-xs" data-hours="6">6h</button>
-              <button class="time-btn active px-2 py-1 rounded text-xs" data-hours="24">24h</button>
-              <button class="time-btn px-2 py-1 rounded text-xs" data-hours="168">7d</button>
-            </div>
+        <div class="flex items-center gap-2">
+          <span class="text-white/50 text-sm" data-i18n="dashboard.time">Time:</span>
+          <div class="flex gap-1">
+            <button class="time-btn px-2 py-1 rounded text-xs" data-hours="1">1h</button>
+            <button class="time-btn px-2 py-1 rounded text-xs" data-hours="6">6h</button>
+            <button class="time-btn active px-2 py-1 rounded text-xs" data-hours="24">24h</button>
+            <button class="time-btn px-2 py-1 rounded text-xs" data-hours="168">7d</button>
           </div>
         </div>
       </div>
     </header>
 
     <!-- Device Header -->
-    <div class="bg-white/5 border-b border-white/10 px-6 py-1 flex-shrink-0">
+    <div class="bg-white/5 border-b border-white/10 px-6 py-2 flex-shrink-0">
       <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <a href="index.html" class="text-white/50 hover:text-white text-sm">&larr; Back</a>
-          <h2 id="device-addr" class="text-base font-bold font-mono text-blue-400">Loading...</h2>
+        <div class="flex items-center gap-3">
+          <a href="index.html" class="flex items-center gap-1.5 text-white/50 hover:text-[var(--accent)] text-sm transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M15 19l-7-7 7-7"/></svg>
+            <span data-i18n="device.back">Back</span>
+          </a>
+          <div class="border-l border-white/15 h-5"></div>
+          <h2 id="device-addr" class="text-base font-bold font-mono text-[var(--accent)]">Loading...</h2>
           <span id="device-name" class="text-sm text-white/70"></span>
-          <span id="device-operator" class="text-sm px-2 py-0.5 rounded"></span>
-          <span id="device-ownership" class="text-xs text-white/50"></span>
+          <span id="device-operator" class="text-xs px-2 py-0.5 rounded border border-white/10"></span>
+          <span id="device-ownership" class="text-xs text-white/40"></span>
         </div>
-        <div class="flex items-center gap-6 text-xs text-white/50">
-          <span>DevEUI <span id="device-deveui" class="text-white/80 font-mono">-</span></span>
-          <span>App <span id="device-app" class="text-white/80">-</span></span>
-          <span>Profile <span id="device-profile-type" class="text-white/80">-</span></span>
-          <span>First seen <span id="stat-first" class="text-white/80">-</span></span>
-          <span>Last seen <span id="stat-last" class="text-white/80">-</span></span>
+        <div class="flex items-center gap-5 text-xs">
+          <div class="flex items-center gap-1.5 text-white/40"><svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg><span data-i18n="device.deveui">DevEUI</span> <span id="device-deveui" class="text-white/80 font-mono ml-0.5">-</span></div>
+          <div class="flex items-center gap-1.5 text-white/40"><svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg><span data-i18n="device.app">App</span> <span id="device-app" class="text-white/80 ml-0.5">-</span></div>
+          <div class="flex items-center gap-1.5 text-white/40"><svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span data-i18n="device.profile">Profile</span> <span id="device-profile-type" class="text-white/80 ml-0.5">-</span></div>
+          <div class="flex items-center gap-1.5 text-white/40"><svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span id="stat-first" class="text-white/70">-</span> <span class="text-white/25">→</span> <span id="stat-last" class="text-white/70">-</span></div>
         </div>
       </div>
     </div>
 
     <!-- Content -->
     <div class="flex-1 overflow-auto p-6">
-      <div id="loading" class="text-center py-12 text-gray-500">Loading device data...</div>
+      <div id="loading" class="text-center py-12 text-gray-500" data-i18n="device.loading">Loading device data...</div>
 
       <div id="content" class="hidden">
         <!-- Stats Row -->
-        <div class="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-9 gap-4 mb-6">
-          <div class="stat-card">
-            <div class="label">Packets</div>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-4 mb-6">
+          <div class="stat-card accent-teal">
+            <div class="label flex items-center gap-1.5">
+              <svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              <span data-i18n="device.packets">Packets</span><button class="help-btn" data-help="help.dev_packets">?</button>
+            </div>
             <div id="stat-packets" class="value">-</div>
           </div>
-          <div class="stat-card">
-            <div class="label">Missed</div>
+          <div class="stat-card accent-red">
+            <div class="label flex items-center gap-1.5">
+              <svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+              <span data-i18n="device.missed">Missed</span><button class="help-btn" data-help="help.dev_missed">?</button>
+            </div>
             <div id="stat-missed" class="value">-</div>
           </div>
-          <div class="stat-card">
-            <div class="label">Packet Loss</div>
+          <div class="stat-card accent-orange">
+            <div class="label flex items-center gap-1.5">
+              <svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+              <span data-i18n="device.packet_loss">Packet Loss</span><button class="help-btn" data-help="help.dev_packet_loss">?</button>
+            </div>
             <div id="stat-loss" class="value">-</div>
           </div>
-          <div class="stat-card">
-            <div class="label">Total Airtime</div>
+          <div class="stat-card accent-amber">
+            <div class="label flex items-center gap-1.5">
+              <svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span data-i18n="device.total_airtime">Total Airtime</span><button class="help-btn" data-help="help.dev_airtime">?</button>
+            </div>
             <div id="stat-airtime" class="value">-</div>
           </div>
-          <div class="stat-card">
-            <div class="label">Duty Cycle</div>
+          <div class="stat-card accent-purple">
+            <div class="label flex items-center gap-1.5">
+              <svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+              <span data-i18n="device.duty_cycle">Duty Cycle</span><button class="help-btn" data-help="help.dev_duty_cycle">?</button>
+            </div>
             <div id="stat-duty" class="value">-</div>
           </div>
-          <div class="stat-card">
-            <div class="label">Avg Interval</div>
+          <div class="stat-card accent-blue">
+            <div class="label flex items-center gap-1.5">
+              <svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              <span data-i18n="device.avg_interval">Avg Interval</span><button class="help-btn" data-help="help.dev_interval">?</button>
+            </div>
             <div id="stat-interval" class="value">-</div>
           </div>
-          <div class="stat-card">
-            <div class="label">Avg RSSI</div>
+          <div class="stat-card accent-green">
+            <div class="label flex items-center gap-1.5">
+              <svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6m-6 0l6-6M17 1l6 6m-6 0l6-6"/><path d="M8 11a4 4 0 018 0v5a6 6 0 01-8.5 5.4"/><path d="M2 16c.9 2.2 2.8 3.9 5 4.6"/></svg>
+              <span data-i18n="device.avg_rssi">Avg RSSI</span><button class="help-btn" data-help="help.dev_rssi">?</button>
+            </div>
             <div id="stat-rssi" class="value">-</div>
           </div>
-          <div class="stat-card">
-            <div class="label">Avg SNR</div>
+          <div class="stat-card accent-green">
+            <div class="label flex items-center gap-1.5">
+              <svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              <span data-i18n="device.avg_snr">Avg SNR</span><button class="help-btn" data-help="help.dev_snr">?</button>
+            </div>
             <div id="stat-snr" class="value">-</div>
           </div>
-          <div class="stat-card">
-            <div class="label">Gateways</div>
+          <div class="stat-card accent-blue">
+            <div class="label flex items-center gap-1.5">
+              <svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>
+              <span data-i18n="device.gateways">Gateways</span><button class="help-btn" data-help="help.dev_gateways">?</button>
+            </div>
             <div id="stat-gateways" class="value">-</div>
           </div>
         </div>
 
-        <!-- Last Frame -->
-        <div id="last-frame-section" class="mb-6 hidden">
-          <div class="bg-white/5 border border-white/10 rounded-lg p-4">
-            <h3 class="text-sm font-semibold text-white/80 mb-3">Last Frame</h3>
-            <div class="flex items-center gap-6 text-xs text-white/50 mb-3">
-              <span>FCnt <span id="lf-fcnt" class="text-white/80 font-mono">-</span></span>
-              <span>FPort <span id="lf-fport" class="text-white/80 font-mono">-</span></span>
-              <span>Received <span id="lf-time" class="text-white/80">-</span></span>
-            </div>
-            <div class="mb-2">
-              <div class="text-xs text-white/40 mb-1">Raw (hex)</div>
-              <div id="lf-raw" class="font-mono text-xs text-orange-300/80 bg-black/30 rounded px-3 py-2 break-all">-</div>
-            </div>
-            <div id="lf-decoded-section" class="hidden">
-              <div class="text-xs text-white/40 mb-1">Decoded</div>
-              <pre id="lf-decoded" class="font-mono text-xs text-green-300/80 bg-black/30 rounded px-3 py-2 overflow-x-auto max-h-48">-</pre>
-            </div>
-          </div>
-        </div>
-
-        <!-- Charts Row 1: Signal -->
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+        <!-- Charts Row 1: Signal + Last Frame -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div class="chart-card">
-            <h3 class="chart-title">RSSI (per packet)</h3>
+            <h3 class="chart-title"><span data-i18n="device.rssi_chart">RSSI (per packet)</span><button class="help-btn" data-help="help.dev_rssi_chart">?</button></h3>
             <div class="h-64">
               <canvas id="rssi-chart"></canvas>
             </div>
           </div>
           <div class="chart-card">
-            <h3 class="chart-title">SNR (per packet)</h3>
+            <h3 class="chart-title"><span data-i18n="device.snr_chart">SNR (per packet)</span><button class="help-btn" data-help="help.dev_snr_chart">?</button></h3>
             <div class="h-64">
               <canvas id="snr-chart"></canvas>
+            </div>
+          </div>
+          <div id="last-frame-section" class="panel hidden">
+            <h3 class="panel-title flex items-center gap-2">
+              <svg class="w-4 h-4 text-orange-400/70" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+              <span data-i18n="device.last_frame">Last Frame</span><button class="help-btn" data-help="help.dev_last_frame">?</button>
+            </h3>
+            <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/50 mb-3">
+              <span><span data-i18n="device.fcnt">FCnt</span> <span id="lf-fcnt" class="text-white/80 font-mono">-</span></span>
+              <span><span data-i18n="device.fport">FPort</span> <span id="lf-fport" class="text-white/80 font-mono">-</span></span>
+              <span><span data-i18n="device.received">Received</span> <span id="lf-time" class="text-white/80">-</span></span>
+            </div>
+            <div class="mb-2">
+              <div class="text-xs text-white/40 mb-1" data-i18n="device.raw_hex">Raw (hex)</div>
+              <div id="lf-raw" class="font-mono text-xs text-orange-300/80 bg-black/30 rounded px-2 py-1.5 break-all max-h-24 overflow-y-auto">-</div>
+            </div>
+            <div id="lf-decoded-section" class="hidden">
+              <div class="text-xs text-white/40 mb-1" data-i18n="device.decoded">Decoded</div>
+              <pre id="lf-decoded" class="font-mono text-xs text-green-300/80 bg-black/30 rounded px-2 py-1.5 overflow-auto max-h-32">-</pre>
             </div>
           </div>
         </div>
@@ -145,19 +181,19 @@
         <!-- Charts Row 2: Distributions -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div class="panel">
-            <h3 class="panel-title">Spreading Factor</h3>
+            <h3 class="panel-title"><span data-i18n="device.spreading_factor">Spreading Factor</span><button class="help-btn" data-help="help.dev_sf">?</button></h3>
             <div class="h-64">
               <canvas id="sf-chart"></canvas>
             </div>
           </div>
           <div class="panel">
-            <h3 class="panel-title">Channel Usage</h3>
+            <h3 class="panel-title"><span data-i18n="device.channel_usage">Channel Usage</span><button class="help-btn" data-help="help.dev_channels">?</button></h3>
             <div class="h-64">
               <canvas id="freq-chart"></canvas>
             </div>
           </div>
           <div class="panel">
-            <h3 class="panel-title">Gateway Distribution</h3>
+            <h3 class="panel-title"><span data-i18n="device.gateway_distribution">Gateway Distribution</span><button class="help-btn" data-help="help.dev_gateway_dist">?</button></h3>
             <div class="h-48">
               <canvas id="gateway-chart"></canvas>
             </div>
@@ -168,19 +204,19 @@
         <!-- Charts Row 3 -->
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
           <div class="chart-card">
-            <h3 class="chart-title">Frame Counter Timeline</h3>
+            <h3 class="chart-title"><span data-i18n="device.fcnt_timeline">Frame Counter Timeline</span><button class="help-btn" data-help="help.dev_fcnt">?</button></h3>
             <div class="h-64">
               <canvas id="fcnt-chart"></canvas>
             </div>
           </div>
           <div class="chart-card">
-            <h3 class="chart-title">Packet Loss Over Time</h3>
+            <h3 class="chart-title"><span data-i18n="device.packet_loss_chart">Packet Loss Over Time</span><button class="help-btn" data-help="help.dev_loss_chart">?</button></h3>
             <div class="h-64">
               <canvas id="loss-chart"></canvas>
             </div>
           </div>
           <div class="chart-card">
-            <h3 class="chart-title">Packet Interval Distribution</h3>
+            <h3 class="chart-title"><span data-i18n="device.interval_chart">Packet Interval Distribution</span><button class="help-btn" data-help="help.dev_interval_chart">?</button></h3>
             <div class="h-64">
               <canvas id="interval-chart"></canvas>
             </div>
@@ -189,14 +225,17 @@
 
         <!-- Recent Packets -->
         <div class="panel">
-          <h3 class="panel-title">Recent Packets</h3>
+          <h3 class="panel-title"><span data-i18n="device.recent_packets">Recent Packets</span><button class="help-btn" data-help="help.dev_recent_packets">?</button></h3>
           <div id="packets-container" class="flex flex-col max-h-[500px]"></div>
         </div>
       </div>
 
-      <div id="error" class="hidden text-center py-12 text-red-500">Device not found</div>
+      <div id="error" class="hidden text-center py-12 text-red-500" data-i18n="device.not_found">Device not found</div>
     </div>
   </div>
+
+  <!-- Help Tooltip -->
+  <div id="help-tooltip" class="help-tooltip hidden"></div>
 
   <script src="search-bar.js"></script>
   <script src="packet-feed.js"></script>

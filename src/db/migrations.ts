@@ -132,5 +132,39 @@ export async function runMigrations(): Promise<void> {
   });
   console.log('  Created settings table');
 
+  // Create import_profiles table
+  await client.command({
+    query: `
+      CREATE TABLE IF NOT EXISTS import_profiles (
+        id String,
+        name String,
+        required_tags Array(String),
+        created_at DateTime64(3),
+        updated_at DateTime64(3),
+        deleted UInt8 DEFAULT 0
+      )
+      ENGINE = ReplacingMergeTree(updated_at)
+      ORDER BY id
+    `,
+  });
+  console.log('  Created import_profiles table');
+
+  // Create chirpstack_servers table
+  await client.command({
+    query: `
+      CREATE TABLE IF NOT EXISTS chirpstack_servers (
+        id String,
+        name String,
+        url String,
+        created_at DateTime64(3),
+        updated_at DateTime64(3),
+        deleted UInt8 DEFAULT 0
+      )
+      ENGINE = ReplacingMergeTree(updated_at)
+      ORDER BY id
+    `,
+  });
+  console.log('  Created chirpstack_servers table');
+
   console.log('Migrations complete');
 }

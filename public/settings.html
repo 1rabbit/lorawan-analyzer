@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Settings - LoRaWAN Analyzer</title>
+  <title data-i18n="settings.title">Settings - LoRaWAN Analyzer</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css">
+  <script src="i18n.js"></script>
 </head>
 <body class="text-gray-100 min-h-screen">
   <div class="flex flex-col h-screen">
@@ -13,14 +14,19 @@
     <header class="bg-white/5 border-b border-white/10 px-6 py-2 flex-shrink-0">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-6">
-          <h1 class="text-base font-bold text-white">LoRaWAN Analyzer</h1>
+          <h1 class="text-base font-bold text-white" data-i18n="nav.title">LoRaWAN Analyzer</h1>
           <nav class="flex gap-1">
-            <a href="index.html" class="nav-link px-3 py-1 rounded text-sm">Dashboard</a>
-            <a href="live.html" class="nav-link px-3 py-1 rounded text-sm">Live Stream</a>
-            <a href="settings.html" class="nav-link active px-3 py-1 rounded text-sm">Settings</a>
+            <a href="index.html" class="nav-link px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><span data-i18n="nav.dashboard">Dashboard</span></a>
+            <a href="live.html" class="nav-link px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="1" fill="currentColor"/><path d="M8.6 15.4a5 5 0 010-6.8M15.4 8.6a5 5 0 010 6.8"/></svg><span data-i18n="nav.live">Live Stream</span></a>
+            <a href="management.html" class="nav-link px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg><span data-i18n="nav.toolkit">Toolkit ChirpStack</span></a>
+            <a href="settings.html" class="nav-link active px-3 py-1 rounded text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M2 14h4M10 8h4M18 16h4"/></svg><span data-i18n="nav.settings">Settings</span></a>
           </nav>
           <div class="border-l border-white/20 h-4"></div>
           <div id="global-search"></div>
+        </div>
+        <div class="flex items-center gap-1 border border-white/20 rounded overflow-hidden">
+          <button class="lang-btn px-2 py-0.5 text-xs" data-lang="en">EN</button>
+          <button class="lang-btn px-2 py-0.5 text-xs" data-lang="fr">FR</button>
         </div>
       </div>
     </header>
@@ -32,43 +38,43 @@
         <!-- MQTT Broker Settings -->
         <div class="panel">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="panel-title mb-0">MQTT Broker</h3>
+            <h3 class="panel-title mb-0" data-i18n="settings.mqtt_broker">MQTT Broker</h3>
             <div class="flex items-center gap-2">
               <span id="mqtt-status-dot" class="w-2.5 h-2.5 rounded-full bg-gray-500"></span>
-              <span id="mqtt-status-text" class="text-xs text-white/50">Unknown</span>
+              <span id="mqtt-status-text" class="text-xs text-white/50" data-i18n="settings.mqtt_status_unknown">Unknown</span>
             </div>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs text-white/50 mb-1">Server URL</label>
+              <label class="block text-xs text-white/50 mb-1" data-i18n="settings.server_url">Server URL</label>
               <input type="text" id="mqtt-server" placeholder="tcp://localhost:1883" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
             </div>
             <div>
-              <label class="block text-xs text-white/50 mb-1">Topic</label>
+              <label class="block text-xs text-white/50 mb-1" data-i18n="settings.topic">Topic</label>
               <input type="text" id="mqtt-topic" placeholder="eu868/gateway/+/event/up" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
             </div>
             <div>
-              <label class="block text-xs text-white/50 mb-1">Username</label>
-              <input type="text" id="mqtt-username" placeholder="(optional)" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+              <label class="block text-xs text-white/50 mb-1" data-i18n="settings.username">Username</label>
+              <input type="text" id="mqtt-username" data-i18n-placeholder="common.optional" placeholder="(optional)" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
             </div>
             <div>
-              <label class="block text-xs text-white/50 mb-1">Password</label>
-              <input type="password" id="mqtt-password" placeholder="(optional)" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+              <label class="block text-xs text-white/50 mb-1" data-i18n="settings.password">Password</label>
+              <input type="password" id="mqtt-password" data-i18n-placeholder="common.optional" placeholder="(optional)" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
             </div>
             <div>
-              <label class="block text-xs text-white/50 mb-1">Format</label>
+              <label class="block text-xs text-white/50 mb-1" data-i18n="settings.format">Format</label>
               <select id="mqtt-format" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
                 <option value="protobuf">Protobuf (v4)</option>
                 <option value="json">JSON (v3)</option>
               </select>
             </div>
             <div>
-              <label class="block text-xs text-white/50 mb-1">Application Topic</label>
+              <label class="block text-xs text-white/50 mb-1" data-i18n="settings.app_topic">Application Topic</label>
               <input type="text" id="mqtt-app-topic" placeholder="application/+/device/+/event/up (optional)" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
             </div>
           </div>
           <div class="flex items-center gap-3 mt-4">
-            <button id="save-mqtt" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors">Save & Connect</button>
+            <button id="save-mqtt" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors" data-i18n="settings.save_connect">Save & Connect</button>
             <span id="mqtt-save-status" class="text-xs text-white/50"></span>
           </div>
         </div>
@@ -76,68 +82,68 @@
         <!-- ChirpStack API Settings -->
         <div class="panel">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="panel-title mb-0">ChirpStack API</h3>
-            <span class="text-xs text-white/30">Optional - enriches gateway names</span>
+            <h3 class="panel-title mb-0" data-i18n="settings.chirpstack_api">ChirpStack API</h3>
+            <span class="text-xs text-white/30" data-i18n="settings.chirpstack_optional">Optional - enriches gateway names</span>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs text-white/50 mb-1">Server URL</label>
+              <label class="block text-xs text-white/50 mb-1" data-i18n="settings.server_url">Server URL</label>
               <input type="text" id="cs-url" placeholder="http://localhost:8080" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
             </div>
             <div>
-              <label class="block text-xs text-white/50 mb-1">API Key</label>
+              <label class="block text-xs text-white/50 mb-1" data-i18n="settings.api_key">API Key</label>
               <input type="password" id="cs-api-key" placeholder="API key from ChirpStack" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
             </div>
           </div>
           <div class="flex items-center gap-3 mt-4">
-            <button id="save-cs" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors">Save</button>
-            <button id="delete-cs" class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-sm text-white/60 transition-colors">Disable</button>
+            <button id="save-cs" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors" data-i18n="common.save">Save</button>
+            <button id="delete-cs" class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-sm text-white/60 transition-colors" data-i18n="common.disable">Disable</button>
             <span id="cs-save-status" class="text-xs text-white/50"></span>
           </div>
         </div>
 
         <!-- Custom Operators -->
         <div class="panel">
-          <h3 class="panel-title">Custom Operators</h3>
+          <h3 class="panel-title" data-i18n="settings.custom_operators">Custom Operators</h3>
           <div id="operators-list" class="space-y-1 mb-4"></div>
           <div class="flex gap-2 items-end">
             <div class="flex-1">
-              <label class="block text-xs text-white/50 mb-1">Prefix (hex)</label>
+              <label class="block text-xs text-white/50 mb-1" data-i18n="settings.prefix_hex">Prefix (hex)</label>
               <input type="text" id="op-prefix" placeholder="260B0000/24" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
             </div>
             <div class="flex-1">
-              <label class="block text-xs text-white/50 mb-1">Name</label>
+              <label class="block text-xs text-white/50 mb-1" data-i18n="settings.name">Name</label>
               <input type="text" id="op-name" placeholder="My Network" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
             </div>
             <div class="w-20">
-              <label class="block text-xs text-white/50 mb-1">Priority</label>
+              <label class="block text-xs text-white/50 mb-1" data-i18n="settings.priority">Priority</label>
               <input type="number" id="op-priority" value="10" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
             </div>
-            <button id="add-operator" class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-sm font-medium transition-colors whitespace-nowrap">Add</button>
+            <button id="add-operator" class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-sm font-medium transition-colors whitespace-nowrap" data-i18n="common.add">Add</button>
           </div>
         </div>
 
         <!-- Hide Rules -->
         <div class="panel">
-          <h3 class="panel-title">Hide Rules</h3>
+          <h3 class="panel-title" data-i18n="settings.hide_rules">Hide Rules</h3>
           <div id="hide-rules-list" class="space-y-1 mb-4"></div>
           <div class="flex gap-2 items-end">
             <div class="w-32">
-              <label class="block text-xs text-white/50 mb-1">Type</label>
+              <label class="block text-xs text-white/50 mb-1" data-i18n="settings.rule_type">Type</label>
               <select id="hr-type" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30">
                 <option value="dev_addr">DevAddr</option>
                 <option value="join_eui">JoinEUI</option>
               </select>
             </div>
             <div class="flex-1">
-              <label class="block text-xs text-white/50 mb-1">Prefix</label>
+              <label class="block text-xs text-white/50 mb-1" data-i18n="settings.prefix">Prefix</label>
               <input type="text" id="hr-prefix" placeholder="260B0000/24" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
             </div>
             <div class="flex-1">
-              <label class="block text-xs text-white/50 mb-1">Description</label>
-              <input type="text" id="hr-desc" placeholder="(optional)" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
+              <label class="block text-xs text-white/50 mb-1" data-i18n="settings.description">Description</label>
+              <input type="text" id="hr-desc" data-i18n-placeholder="common.optional" placeholder="(optional)" class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30">
             </div>
-            <button id="add-hide-rule" class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-sm font-medium transition-colors whitespace-nowrap">Add</button>
+            <button id="add-hide-rule" class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-sm font-medium transition-colors whitespace-nowrap" data-i18n="common.add">Add</button>
           </div>
         </div>
 

@@ -1,10 +1,8 @@
-version: '3.8'
-
 services:
   clickhouse:
     image: clickhouse/clickhouse-server:latest
     volumes:
-      - ./clickhouse/data:/var/lib/clickhouse
+      - clickhouse-data:/var/lib/clickhouse
       - ./clickhouse/config/allow-remote.xml:/etc/clickhouse-server/users.d/allow-remote.xml:ro
       - ./clickhouse/config/system-logs.xml:/etc/clickhouse-server/config.d/system-logs.xml:ro
       - ./clickhouse/config/logging.xml:/etc/clickhouse-server/config.d/logging.xml:ro
@@ -14,6 +12,8 @@ services:
       nofile:
         soft: 262144
         hard: 262144
+    ports:
+      - "8123:8123"
     healthcheck:
       test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
       interval: 5s
@@ -27,6 +27,9 @@ services:
       - "15337:3000"
     volumes:
       - ./public:/app/public:ro
+      # Mount config.toml for MQTT + operator configuration (optional).
+      # Copy config.toml.example to config.toml and edit before enabling.
+      # - ./config.toml:/app/config.toml:ro
     environment:
       CLICKHOUSE_URL: http://clickhouse:8123
       API_BIND: "0.0.0.0:3000"
@@ -55,3 +58,6 @@ services:
       timeout: 5s
       retries: 3
     restart: unless-stopped
+
+volumes:
+  clickhouse-data:

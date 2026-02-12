@@ -16,6 +16,8 @@ import type {
   SFStats,
   JoinEuiGroup,
   DeviceMetadata,
+  ImportProfile,
+  ChirpStackServer,
 } from '../types.js';
 
 export type DeviceFilter = {
@@ -78,14 +80,14 @@ export async function upsertGateway(gatewayId: string, name: string | null = nul
   const client = getClickHouse();
   const now = new Date().toISOString().replace('T', ' ').replace('Z', '');
 
-  // Check if gateway exists
+  // Check if gateway exists (and get existing name to preserve it)
   const result = await client.query({
-    query: `SELECT first_seen FROM gateways WHERE gateway_id = {gatewayId:String} LIMIT 1`,
+    query: `SELECT first_seen, name FROM gateways WHERE gateway_id = {gatewayId:String} ORDER BY last_seen DESC LIMIT 1`,
     query_params: { gatewayId },
     format: 'JSONEachRow',
   });
 
-  const rows = await result.json<{ first_seen: string }>();
+  const rows = await result.json<{ first_seen: string; name: string | null }>();
 
   if (rows.length === 0) {
     // Insert new gateway
@@ -100,12 +102,13 @@ export async function upsertGateway(gatewayId: string, name: string | null = nul
       format: 'JSONEachRow',
     });
   } else {
-    // Update last_seen
+    // Preserve existing name if no new name provided
+    const resolvedName = name ?? rows[0].name;
     await client.insert({
       table: 'gateways',
       values: [{
         gateway_id: gatewayId,
-        name,
+        name: resolvedName,
         first_seen: rows[0].first_seen,
         last_seen: now,
       }],
@@ -121,7 +124,7 @@ export async function getGateways(): Promise<GatewayStats[]> {
     query: `
       SELECT
         gateway_id,
-        any(name) as name,
+        argMax(g.name, g.last_seen) as name,
         min(first_seen) as first_seen,
         max(last_seen) as last_seen,
         COALESCE(p.packet_count, 0) as packet_count,
@@ -160,7 +163,7 @@ export async function getGatewayById(gatewayId: string): Promise<GatewayStats | 
         COALESCE(p.packet_count, 0) as packet_count,
         COALESCE(p.unique_devices, 0) as unique_devices,
         COALESCE(p.total_airtime_us, 0) / 1000 as total_airtime_ms
-      FROM gateways g
+      FROM gateways FINAL g
       LEFT JOIN (
         SELECT
           gateway_id,
@@ -975,13 +978,16 @@ export async function getDownlinkStats(
 }
 
 export async function getChannelDistribution(
-  gatewayId: string,
+  gatewayId: string | null,
   hours: number = 24,
   deviceFilter?: DeviceFilter
 ): Promise<ChannelStats[]> {
   const client = getClickHouse();
 
   const deviceFilterSql = buildDeviceFilterSql(deviceFilter);
+  const gatewayFilter = gatewayId
+    ? `AND gateway_id = {gatewayId:String}`
+    : '';
 
   const result = await client.query({
     query: `
@@ -997,14 +1003,14 @@ export async function getChannelDistribution(
           sum(airtime_us) as channel_airtime,
           sum(sum(airtime_us)) OVER () as total_airtime
         FROM packets
-        WHERE gateway_id = {gatewayId:String}
-          AND timestamp > now() - INTERVAL {hours:UInt32} HOUR
+        WHERE timestamp > now() - INTERVAL {hours:UInt32} HOUR
+          ${gatewayFilter}
           ${deviceFilterSql}
         GROUP BY frequency
       )
       ORDER BY frequency
     `,
-    query_params: { gatewayId, hours },
+    query_params: { gatewayId: gatewayId ?? '', hours },
     format: 'JSONEachRow',
   });
 
@@ -1012,13 +1018,16 @@ export async function getChannelDistribution(
 }
 
 export async function getSFDistribution(
-  gatewayId: string,
+  gatewayId: string | null,
   hours: number = 24,
   deviceFilter?: DeviceFilter
 ): Promise<SFStats[]> {
   const client = getClickHouse();
 
   const deviceFilterSql = buildDeviceFilterSql(deviceFilter);
+  const gatewayFilter = gatewayId
+    ? `AND gateway_id = {gatewayId:String}`
+    : '';
 
   const result = await client.query({
     query: `
@@ -1034,15 +1043,15 @@ export async function getSFDistribution(
           sum(airtime_us) as sf_airtime,
           sum(sum(airtime_us)) OVER () as total_airtime
         FROM packets
-        WHERE gateway_id = {gatewayId:String}
-          AND spreading_factor IS NOT NULL
+        WHERE spreading_factor IS NOT NULL
           AND timestamp > now() - INTERVAL {hours:UInt32} HOUR
+          ${gatewayFilter}
           ${deviceFilterSql}
         GROUP BY spreading_factor
       )
       ORDER BY spreading_factor
     `,
-    query_params: { gatewayId, hours },
+    query_params: { gatewayId: gatewayId ?? '', hours },
     format: 'JSONEachRow',
   });
 
@@ -1382,4 +1391,156 @@ export async function getAllDeviceMetadata(): Promise<DeviceMetadata[]> {
   });
 
   return result.json<DeviceMetadata>();
+}
+
+// ============================================
+// Import Profile Queries
+// ============================================
+
+export async function getImportProfiles(): Promise<ImportProfile[]> {
+  const client = getClickHouse();
+
+  const result = await client.query({
+    query: `SELECT id, name, required_tags, created_at, updated_at FROM import_profiles FINAL WHERE deleted = 0 ORDER BY name`,
+    format: 'JSONEachRow',
+  });
+
+  return result.json<ImportProfile>();
+}
+
+export async function getImportProfileById(id: string): Promise<ImportProfile | null> {
+  const client = getClickHouse();
+
+  const result = await client.query({
+    query: `SELECT id, name, required_tags, created_at, updated_at FROM import_profiles FINAL WHERE id = {id:String} AND deleted = 0`,
+    query_params: { id },
+    format: 'JSONEachRow',
+  });
+
+  const rows = await result.json<ImportProfile>();
+  return rows.length > 0 ? rows[0] : null;
+}
+
+export async function insertImportProfile(profile: { id: string; name: string; required_tags: string[] }): Promise<void> {
+  const client = getClickHouse();
+  const now = new Date().toISOString().replace('T', ' ').replace('Z', '');
+
+  await client.insert({
+    table: 'import_profiles',
+    values: [{
+      id: profile.id,
+      name: profile.name,
+      required_tags: profile.required_tags,
+      created_at: now,
+      updated_at: now,
+      deleted: 0,
+    }],
+    format: 'JSONEachRow',
+  });
+}
+
+export async function updateImportProfile(id: string, data: { name?: string; required_tags?: string[] }): Promise<void> {
+  const client = getClickHouse();
+  const now = new Date().toISOString().replace('T', ' ').replace('Z', '');
+
+  // Fetch current profile to merge fields
+  const existing = await getImportProfileById(id);
+  if (!existing) throw new Error(`Import profile ${id} not found`);
+
+  await client.insert({
+    table: 'import_profiles',
+    values: [{
+      id,
+      name: data.name ?? existing.name,
+      required_tags: data.required_tags ?? existing.required_tags,
+      created_at: existing.created_at,
+      updated_at: now,
+      deleted: 0,
+    }],
+    format: 'JSONEachRow',
+  });
+}
+
+export async function deleteImportProfile(id: string): Promise<void> {
+  const client = getClickHouse();
+  const now = new Date().toISOString().replace('T', ' ').replace('Z', '');
+
+  const existing = await getImportProfileById(id);
+  if (!existing) throw new Error(`Import profile ${id} not found`);
+
+  await client.insert({
+    table: 'import_profiles',
+    values: [{
+      id,
+      name: existing.name,
+      required_tags: existing.required_tags,
+      created_at: existing.created_at,
+      updated_at: now,
+      deleted: 1,
+    }],
+    format: 'JSONEachRow',
+  });
+}
+
+// ============================================
+// ChirpStack Server Queries
+// ============================================
+
+export async function getChirpStackServers(): Promise<ChirpStackServer[]> {
+  const client = getClickHouse();
+
+  const result = await client.query({
+    query: `SELECT id, name, url, created_at FROM chirpstack_servers FINAL WHERE deleted = 0 ORDER BY name`,
+    format: 'JSONEachRow',
+  });
+
+  return result.json<ChirpStackServer>();
+}
+
+export async function insertChirpStackServer(server: { id: string; name: string; url: string }): Promise<void> {
+  const client = getClickHouse();
+  const now = new Date().toISOString().replace('T', ' ').replace('Z', '');
+
+  await client.insert({
+    table: 'chirpstack_servers',
+    values: [{
+      id: server.id,
+      name: server.name,
+      url: server.url,
+      created_at: now,
+      updated_at: now,
+      deleted: 0,
+    }],
+    format: 'JSONEachRow',
+  });
+}
+
+export async function deleteChirpStackServer(id: string): Promise<void> {
+  const client = getClickHouse();
+  const now = new Date().toISOString().replace('T', ' ').replace('Z', '');
+
+  // Fetch current to get existing data for ReplacingMergeTree
+  const result = await client.query({
+    query: `SELECT id, name, url, created_at FROM chirpstack_servers FINAL WHERE id = {id:String} AND deleted = 0`,
+    query_params: { id },
+    format: 'JSONEachRow',
+  });
+
+  const rows = await result.json<ChirpStackServer>();
+  if (rows.length === 0) throw new Error(`ChirpStack server ${id} not found`);
+
+  const existing = rows[0];
+
+  await client.insert({
+    table: 'chirpstack_servers',
+    values: [{
+      id,
+      name: existing.name,
+      url: existing.url,
+      created_at: existing.created_at,
+      updated_at: now,
+      deleted: 1,
+    }],
+    format: 'JSONEachRow',
+  });
 }

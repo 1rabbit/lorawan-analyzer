@@ -11,6 +11,12 @@ import { statsRoutes } from './stats.js';
 import { operatorRoutes } from './operators.js';
 import { configRoutes, setMyDeviceRanges, setOperatorColors } from './config.js';
 import { settingsRoutes, type SettingsCallbacks } from './settings.js';
+import { chirpstackProxyRoutes } from './chirpstack-proxy.js';
+import { importProfileRoutes } from './import-profiles.js';
+import { importServerRoutes } from './import-servers.js';
+import { importRoutes } from './import-routes.js';
+import { exportRoutes } from './export-routes.js';
+import { bulkRoutes } from './bulk-routes.js';
 import { addLiveClient, startLiveBroadcast } from '../websocket/live.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -52,6 +58,16 @@ export async function startApi(config: ApiConfig, myDevices: MyDeviceRange[] = [
   if (callbacks) {
     await fastify.register(settingsRoutes(callbacks));
   }
+
+  // ChirpStack proxy + management routes
+  await fastify.register(chirpstackProxyRoutes);
+  await fastify.register(importProfileRoutes);
+  await fastify.register(importServerRoutes);
+
+  // Import / Export / Bulk operation routes
+  await fastify.register(importRoutes);
+  await fastify.register(exportRoutes);
+  await fastify.register(bulkRoutes);
 
   // Device metadata API
   fastify.get('/api/metadata/devices', async () => {

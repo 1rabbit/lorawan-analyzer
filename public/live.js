@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const lo = parseInt(rssiMinEl.value, 10);
     const hi = parseInt(rssiMaxEl.value, 10);
     if (lo <= -140 && hi >= -30) {
-      rssiRangeLabel.textContent = 'off';
+      rssiRangeLabel.textContent = t('common.off');
     } else if (lo <= -140) {
       rssiRangeLabel.textContent = `< ${hi}`;
     } else if (hi >= -30) {
@@ -141,12 +141,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     showGateway: true,
     showAddr: true,
     showOperator: true,
+    showDevEui: true,
     clickable: true,
     noFilterBar: true,
     countEl: document.getElementById('packet-count'),
     searchEl: document.getElementById('search-input'),
     isMyDevice,
     getOperatorStyle,
+    getGatewayName: (gwId) => {
+      const gw = gateways.find(g => g.gateway_id === gwId);
+      return gw ? (gw.name || gwId) : null;
+    },
   });
 
   loadGateways();
@@ -181,6 +186,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Gateway tab: All Gateways
   document.querySelector('.gateway-tab[data-gateway=""]').addEventListener('click', () => {
     selectGateway(null);
+  });
+
+  // Re-translate on language change
+  window.addEventListener('langchange', () => {
+    updateRssiLabel();
   });
 });
 
@@ -356,10 +366,11 @@ async function loadRecentPackets(gatewayId = null) {
         airtime_ms: p.airtime_us ? p.airtime_us / 1000 : 0,
         tx_status: p.packet_type === 'tx_ack' ? p.operator : undefined,
         confirmed: p.confirmed,
+        device_name: p.device_name,
       };
       liveEntries.push(livePacket);
     }
-    setPacketFeedData(liveEntries);
+    setPacketFeedData(liveEntries, true);
   } catch (e) {
     console.error('Failed to load recent packets:', e);
   }

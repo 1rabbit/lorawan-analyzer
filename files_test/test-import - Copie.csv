@@ -1,0 +1,6 @@
+dev_eui;app_key;name;description;site;building
+AABBCCDD00000001;00112233445566778899AABBCCDDEEFF;Test Device 1;Premier device de test;LILI;Batiment A
+AABBCCDD00000002;00112233445566778899AABBCCDDEEF0;Test Device 2;Deuxieme device;LILI;Batiment B
+AABBCCDD00000003;00112233445566778899AABBCCDDEEF1;Test Device 3;Troisieme device;Lyon;Batiment C
+AABBCCDD00000004;INVALIDKEY;Test Device 4;AppKey invalide pour test erreur;LILI;Batiment A
+AABBCCDD0000000X;;Test Device 5;DevEUI invalide pour test erreur;LILI;Batiment A

@@ -120,10 +120,11 @@ function convertToLivePacket(packet: ParsedPacket): LivePacket {
     airtime_ms: packet.airtime_us / 1000,
   };
 
-  // Enrich with device name from metadata cache
+  // Enrich with device metadata from cache
   const metadata = packet.dev_addr ? getMetadataCache()?.getByDevAddr(packet.dev_addr) : null;
   if (metadata) {
     base.device_name = metadata.device_name;
+    if (metadata.dev_eui) base.dev_eui = metadata.dev_eui;
   }
 
   if (packet.packet_type === 'data' || packet.packet_type === 'downlink') {

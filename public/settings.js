@@ -40,18 +40,18 @@
     const text = document.getElementById('mqtt-status-text');
     if (!status) {
       dot.className = 'w-2.5 h-2.5 rounded-full bg-gray-500';
-      text.textContent = 'Unknown';
+      text.textContent = t('settings.mqtt_status_unknown');
       return;
     }
     if (status.connected) {
       dot.className = 'w-2.5 h-2.5 rounded-full bg-green-500';
-      text.textContent = 'Connected to ' + (status.server || 'broker');
+      text.textContent = t('settings.mqtt_connected', { server: status.server || 'broker' });
     } else if (status.server) {
       dot.className = 'w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse';
-      text.textContent = 'Connecting to ' + status.server + '...';
+      text.textContent = t('settings.mqtt_connecting', { server: status.server });
     } else {
       dot.className = 'w-2.5 h-2.5 rounded-full bg-gray-500';
-      text.textContent = 'Not configured';
+      text.textContent = t('settings.mqtt_not_configured');
     }
   }
 
@@ -72,7 +72,7 @@
   document.getElementById('save-mqtt').addEventListener('click', async () => {
     const server = document.getElementById('mqtt-server').value.trim();
     if (!server) {
-      showSaveStatus('mqtt-save-status', 'Server URL is required', true);
+      showSaveStatus('mqtt-save-status', t('settings.server_url_required'), true);
       return;
     }
 
@@ -89,7 +89,7 @@
           application_topic: document.getElementById('mqtt-app-topic').value.trim() || undefined,
         }),
       });
-      showSaveStatus('mqtt-save-status', 'Saved! Connecting...', false);
+      showSaveStatus('mqtt-save-status', t('settings.saved_connecting'), false);
       // Refresh status after a delay to let MQTT connect
       setTimeout(refreshStatus, 2000);
       setTimeout(refreshStatus, 5000);
@@ -105,7 +105,7 @@
     const apiKey = document.getElementById('cs-api-key').value.trim();
 
     if (!url || !apiKey) {
-      showSaveStatus('cs-save-status', 'URL and API Key are required', true);
+      showSaveStatus('cs-save-status', t('settings.url_apikey_required'), true);
       return;
     }
 
@@ -115,7 +115,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, api_key: apiKey }),
       });
-      showSaveStatus('cs-save-status', 'Saved! Sync started.', false);
+      showSaveStatus('cs-save-status', t('settings.saved_sync'), false);
     } catch (err) {
       showSaveStatus('cs-save-status', err.message, true);
     }
@@ -126,7 +126,7 @@
       await api('/api/settings/chirpstack-api', { method: 'DELETE' });
       document.getElementById('cs-url').value = '';
       document.getElementById('cs-api-key').value = '';
-      showSaveStatus('cs-save-status', 'Disabled', false);
+      showSaveStatus('cs-save-status', t('common.disabled'), false);
     } catch (err) {
       showSaveStatus('cs-save-status', err.message, true);
     }
@@ -139,7 +139,7 @@
       const data = await api('/api/operators');
       const list = document.getElementById('operators-list');
       if (!data.operators || data.operators.length === 0) {
-        list.innerHTML = '<div class="text-xs text-white/30 py-2">No custom operators configured</div>';
+        list.innerHTML = `<div class="text-xs text-white/30 py-2">${t('settings.no_operators')}</div>`;
         return;
       }
       list.innerHTML = data.operators.map(op =>
@@ -149,7 +149,7 @@
             <span class="text-white/60">${esc(op.name)}</span>
             <span class="text-xs text-white/30">priority: ${op.priority ?? 0}</span>
           </div>
-          <button onclick="deleteOperator(${op.id})" class="text-red-400 hover:text-red-300 text-xs px-2">Delete</button>
+          <button onclick="deleteOperator(${op.id})" class="text-red-400 hover:text-red-300 text-xs px-2">${t('common.delete')}</button>
         </div>`
       ).join('');
     } catch (err) {
@@ -195,7 +195,7 @@
       const data = await api('/api/hide-rules');
       const list = document.getElementById('hide-rules-list');
       if (!data.rules || data.rules.length === 0) {
-        list.innerHTML = '<div class="text-xs text-white/30 py-2">No hide rules configured</div>';
+        list.innerHTML = `<div class="text-xs text-white/30 py-2">${t('settings.no_hide_rules')}</div>`;
         return;
       }
       list.innerHTML = data.rules.map(rule =>
@@ -205,7 +205,7 @@
             <span class="font-mono text-white/80">${esc(rule.prefix)}</span>
             <span class="text-white/40 text-xs">${esc(rule.description || '')}</span>
           </div>
-          <button onclick="deleteHideRule(${rule.id})" class="text-red-400 hover:text-red-300 text-xs px-2">Delete</button>
+          <button onclick="deleteHideRule(${rule.id})" class="text-red-400 hover:text-red-300 text-xs px-2">${t('common.delete')}</button>
         </div>`
       ).join('');
     } catch (err) {
@@ -259,4 +259,13 @@
 
   // Auto-refresh MQTT status
   setInterval(refreshStatus, 5000);
+
+  // Re-translate on language change
+  window.addEventListener('langchange', () => {
+    // Re-render MQTT status with current data
+    refreshStatus();
+    // Re-render lists
+    loadOperators();
+    loadHideRules();
+  });
 })();

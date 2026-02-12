@@ -14,8 +14,15 @@ config.toml
 
 # Environment and secrets
 .env
+.env.*
 *.pem
 *.key
+*.crt
+*.p12
+*.pfx
+
+# Mosquitto password file (may contain hashed credentials)
+mosquitto/config/passwd
 
 # IDE and tools
 .idea/
