@@ -34,7 +34,17 @@ function tryDecodeAscii(hex: string): string | null {
   }
 }
 
-const typedPrefixMap: Array<{ prefix: string, operator: string }> = DEVICE_PREFIX_MAP;
+const typedPrefixMap: Array<{ prefix: string, operator: string, color?: string }> = DEVICE_PREFIX_MAP;
+
+export function getDevicePrefixColorMap(): Record<string, string> {
+  const colors: Record<string, string> = {};
+  for (const entry of typedPrefixMap) {
+    if (entry.color) {
+      colors[entry.operator] = entry.color;
+    }
+  }
+  return colors;
+}
 
 export function matchOperatorForJoinEui(joinEui: string): string {
   const upperJoinEui = joinEui.toUpperCase();

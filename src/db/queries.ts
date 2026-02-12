@@ -498,6 +498,10 @@ export async function getTimeSeries(options: {
   const fromStr = from.toISOString().replace('T', ' ').replace('Z', '');
   const toStr = to.toISOString().replace('T', ' ').replace('Z', '');
 
+  // When grouping by operator, filter to data uplinks only to avoid
+  // mixing manufacturer names (from join requests) with network operators
+  const operatorFilter = groupByExpr === 'operator' ? "AND packet_type = 'data'" : '';
+
   const query = groupByExpr
     ? `
       SELECT
@@ -509,6 +513,7 @@ export async function getTimeSeries(options: {
         AND timestamp <= parseDateTimeBestEffort({to:String})
         ${gatewayFilter}
         ${deviceFilterSql}
+        ${operatorFilter}
       GROUP BY ts, group_name
       ORDER BY ts, group_name
     `
@@ -1167,6 +1172,7 @@ export async function getOperatorStats(
         sum(airtime_us) / 1000 as total_airtime_ms
       FROM packets
       WHERE timestamp > now() - INTERVAL {hours:UInt32} HOUR
+        AND packet_type = 'data'
         ${gatewayFilter}
         ${deviceFilterSql}
       GROUP BY operator

@@ -1,31 +1,147 @@
 [
-  { "prefix": "00000000/7", "name": "Private" },
-  { "prefix": "02000000/7", "name": "Private" },
-  { "prefix": "04000000/7", "name": "Actility" },
-  { "prefix": "06000000/7", "name": "Proximus" },
-  { "prefix": "08000000/7", "name": "Swisscom" },
-  { "prefix": "0E000000/7", "name": "Bouygues Telecom" },
-  { "prefix": "10000000/7", "name": "Orbiwise" },
-  { "prefix": "12000000/7", "name": "SENET" },
-  { "prefix": "14000000/7", "name": "KPN" },
-  { "prefix": "16000000/7", "name": "EveryNet" },
-  { "prefix": "1A000000/7", "name": "SK Telecom" },
-  { "prefix": "1C000000/7", "name": "SagemCom" },
-  { "prefix": "1E000000/7", "name": "Orange" },
-  { "prefix": "20000000/7", "name": "A2A Smart City" },
-  { "prefix": "24000000/7", "name": "Kerlink" },
-  { "prefix": "26000000/7", "name": "The Things Network" },
-  { "prefix": "2A000000/7", "name": "Cisco Systems" },
-  { "prefix": "2E000000/7", "name": "MultiTech Systems" },
-  { "prefix": "30000000/7", "name": "Loriot" },
-  { "prefix": "32000000/7", "name": "NNNCo" },
-  { "prefix": "3E000000/7", "name": "Axatel" },
-  { "prefix": "44000000/7", "name": "Comcast" },
-  { "prefix": "46000000/7", "name": "Ventia" },
-  { "prefix": "60000000/7", "name": "SoftBank" },
-  { "prefix": "6A000000/7", "name": "Tencent" },
-  { "prefix": "6C000000/7", "name": "Netze BW" },
-  { "prefix": "6E000000/7", "name": "Tektelic" },
-  { "prefix": "70000000/7", "name": "Charter Communication" },
-  { "prefix": "72000000/7", "name": "Amazon" }
+  {
+    "prefix": "00000000/7",
+    "name": "Private",
+    "color": "hsl(289, 70%, 75%)"
+  },
+  {
+    "prefix": "02000000/7",
+    "name": "Private",
+    "color": "hsl(289, 70%, 75%)"
+  },
+  {
+    "prefix": "04000000/7",
+    "name": "Actility",
+    "color": "hsl(337, 73%, 62%)"
+  },
+  {
+    "prefix": "06000000/7",
+    "name": "Proximus",
+    "color": "hsl(177, 88%, 55%)"
+  },
+  {
+    "prefix": "08000000/7",
+    "name": "Swisscom",
+    "color": "hsl(106, 87%, 56%)"
+  },
+  {
+    "prefix": "0E000000/7",
+    "name": "Bouygues Telecom",
+    "color": "hsl(152, 75%, 56%)"
+  },
+  {
+    "prefix": "10000000/7",
+    "name": "Orbiwise",
+    "color": "hsl(203, 84%, 46%)"
+  },
+  {
+    "prefix": "12000000/7",
+    "name": "SENET",
+    "color": "hsl(195, 90%, 73%)"
+  },
+  {
+    "prefix": "14000000/7",
+    "name": "KPN",
+    "color": "hsl(96, 73%, 72%)"
+  },
+  {
+    "prefix": "16000000/7",
+    "name": "EveryNet",
+    "color": "hsl(277, 89%, 59%)"
+  },
+  {
+    "prefix": "1A000000/7",
+    "name": "SK Telecom",
+    "color": "hsl(331, 72%, 67%)"
+  },
+  {
+    "prefix": "1C000000/7",
+    "name": "SagemCom",
+    "color": "hsl(291, 87%, 68%)"
+  },
+  {
+    "prefix": "1E000000/7",
+    "name": "Orange",
+    "color": "#f97316"
+  },
+  {
+    "prefix": "20000000/7",
+    "name": "A2A Smart City",
+    "color": "hsl(7, 83%, 71%)"
+  },
+  {
+    "prefix": "24000000/7",
+    "name": "Kerlink",
+    "color": "hsl(113, 84%, 45%)"
+  },
+  {
+    "prefix": "26000000/7",
+    "name": "The Things Network",
+    "color": "#3b82f6"
+  },
+  {
+    "prefix": "2A000000/7",
+    "name": "Cisco Systems",
+    "color": "hsl(220, 89%, 50%)"
+  },
+  {
+    "prefix": "2E000000/7",
+    "name": "MultiTech Systems",
+    "color": "hsl(195, 76%, 49%)"
+  },
+  {
+    "prefix": "30000000/7",
+    "name": "Loriot",
+    "color": "hsl(31, 77%, 49%)"
+  },
+  {
+    "prefix": "32000000/7",
+    "name": "NNNCo",
+    "color": "hsl(293, 81%, 61%)"
+  },
+  {
+    "prefix": "3E000000/7",
+    "name": "Axatel",
+    "color": "hsl(334, 72%, 57%)"
+  },
+  {
+    "prefix": "44000000/7",
+    "name": "Comcast",
+    "color": "hsl(113, 80%, 66%)"
+  },
+  {
+    "prefix": "46000000/7",
+    "name": "Ventia",
+    "color": "hsl(18, 79%, 46%)"
+  },
+  {
+    "prefix": "60000000/7",
+    "name": "SoftBank",
+    "color": "hsl(206, 72%, 73%)"
+  },
+  {
+    "prefix": "6A000000/7",
+    "name": "Tencent",
+    "color": "hsl(237, 75%, 61%)"
+  },
+  {
+    "prefix": "6C000000/7",
+    "name": "Netze BW",
+    "color": "hsl(238, 90%, 52%)"
+  },
+  {
+    "prefix": "6E000000/7",
+    "name": "Tektelic",
+    "color": "hsl(223, 72%, 73%)"
+  },
+  {
+    "prefix": "70000000/7",
+    "name": "Charter Communication",
+    "color": "hsl(169, 74%, 48%)"
+  },
+  {
+    "prefix": "72000000/7",
+    "name": "Amazon",
+    "color": "hsl(110, 77%, 55%)"
+  }
 ]

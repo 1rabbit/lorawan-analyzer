@@ -1,35 +1,167 @@
 [
-  { "prefix": "70B3D57ED", "operator": "The Things Network" },
-  { "prefix": "70B3D58", "operator": "The Things Network" },
-  { "prefix": "6081F9", "operator": "Helium" },
-  { "prefix": "0016C0", "operator": "Actility" },
-  { "prefix": "00250C", "operator": "Semtech" },
-  { "prefix": "0004A3", "operator": "Microchip" },
-  { "prefix": "AC1F09", "operator": "RAK Wireless" },
-  { "prefix": "60C5A8", "operator": "RAK Wireless" },
-  { "prefix": "2CF7F1", "operator": "Seeed Studio" },
-  { "prefix": "8A8B18", "operator": "Seeed Studio" },
-  { "prefix": "A84041", "operator": "Dragino" },
-  { "prefix": "7076FF", "operator": "Kerlink" },
-  { "prefix": "24E124", "operator": "Milesight" },
-  { "prefix": "70B3D5705", "operator": "Digital Matter" },
-  { "prefix": "58A0CB", "operator": "Browan" },
-  { "prefix": "E8E1E1", "operator": "Browan"},
-  { "prefix": "001616", "operator": "MerryIoT" },
-  { "prefix": "223233", "operator": "Heltec" },
-  { "prefix": "753890", "operator": "SenseCore" },
-  { "prefix": "FCD6BD", "operator": "Bosch" },
-  { "prefix": "70B3D57BA", "operator": "Decentlab" },
-  { "prefix": "70B3D5BF6", "operator": "Comtac AG" },
-  { "prefix": "70B3D5F3F", "operator": "Comtac AG" },
-  { "prefix": "BC97401", "operator": "Comtac AG" },
-  { "prefix": "70B3D5", "operator": "IMST GmbH" },
-  { "prefix": "0002CC", "operator": "MCCI Corporation" },
-  { "prefix": "8CF957", "operator": "risinghf" },
-  { "prefix": "70B3D55AF", "operator": "JENG IoT" },
-  { "prefix": "102CEF", "operator": "EMU Electronic AG" },
-  { "prefix": "70B3D5CD0", "operator": "Ellenex" },
-  { "prefix": "BCAF91", "operator": "TE Connectivity" },
-  { "prefix": "FC48C9", "operator": "YOBIIQ B.V." },
-  { "prefix": "0013A2", "operator": "Digi International" }
+  {
+    "prefix": "70B3D57ED",
+    "operator": "The Things Network",
+    "color": "#3b82f6"
+  },
+  {
+    "prefix": "70B3D58",
+    "operator": "The Things Network",
+    "color": "#3b82f6"
+  },
+  {
+    "prefix": "6081F9",
+    "operator": "Helium",
+    "color": "#a855f7"
+  },
+  {
+    "prefix": "0016C0",
+    "operator": "Actility",
+    "color": "hsl(337, 73%, 62%)"
+  },
+  {
+    "prefix": "00250C",
+    "operator": "Semtech",
+    "color": "hsl(329, 76%, 57%)"
+  },
+  {
+    "prefix": "0004A3",
+    "operator": "Microchip",
+    "color": "hsl(289, 76%, 60%)"
+  },
+  {
+    "prefix": "AC1F09",
+    "operator": "RAK Wireless",
+    "color": "hsl(237, 89%, 47%)"
+  },
+  {
+    "prefix": "60C5A8",
+    "operator": "RAK Wireless",
+    "color": "hsl(237, 89%, 47%)"
+  },
+  {
+    "prefix": "2CF7F1",
+    "operator": "Seeed Studio",
+    "color": "hsl(144, 72%, 71%)"
+  },
+  {
+    "prefix": "8A8B18",
+    "operator": "Seeed Studio",
+    "color": "hsl(144, 72%, 71%)"
+  },
+  {
+    "prefix": "A84041",
+    "operator": "Dragino",
+    "color": "hsl(211, 78%, 53%)"
+  },
+  {
+    "prefix": "7076FF",
+    "operator": "Kerlink",
+    "color": "hsl(113, 84%, 45%)"
+  },
+  {
+    "prefix": "24E124",
+    "operator": "Milesight",
+    "color": "hsl(332, 80%, 70%)"
+  },
+  {
+    "prefix": "70B3D5705",
+    "operator": "Digital Matter",
+    "color": "hsl(214, 80%, 55%)"
+  },
+  {
+    "prefix": "58A0CB",
+    "operator": "Browan",
+    "color": "hsl(118, 71%, 56%)"
+  },
+  {
+    "prefix": "E8E1E1",
+    "operator": "Browan",
+    "color": "hsl(118, 71%, 56%)"
+  },
+  {
+    "prefix": "001616",
+    "operator": "MerryIoT",
+    "color": "hsl(301, 70%, 54%)"
+  },
+  {
+    "prefix": "223233",
+    "operator": "Heltec",
+    "color": "hsl(123, 84%, 60%)"
+  },
+  {
+    "prefix": "753890",
+    "operator": "SenseCore",
+    "color": "hsl(209, 89%, 65%)"
+  },
+  {
+    "prefix": "FCD6BD",
+    "operator": "Bosch",
+    "color": "hsl(315, 80%, 65%)"
+  },
+  {
+    "prefix": "70B3D57BA",
+    "operator": "Decentlab",
+    "color": "hsl(287, 70%, 57%)"
+  },
+  {
+    "prefix": "70B3D5BF6",
+    "operator": "Comtac AG",
+    "color": "hsl(130, 88%, 49%)"
+  },
+  {
+    "prefix": "70B3D5F3F",
+    "operator": "Comtac AG",
+    "color": "hsl(130, 88%, 49%)"
+  },
+  {
+    "prefix": "BC97401",
+    "operator": "Comtac AG",
+    "color": "hsl(130, 88%, 49%)"
+  },
+  {
+    "prefix": "70B3D5",
+    "operator": "IMST GmbH",
+    "color": "hsl(21, 72%, 58%)"
+  },
+  {
+    "prefix": "0002CC",
+    "operator": "MCCI Corporation",
+    "color": "hsl(186, 87%, 52%)"
+  },
+  {
+    "prefix": "8CF957",
+    "operator": "risinghf",
+    "color": "hsl(316, 79%, 64%)"
+  },
+  {
+    "prefix": "70B3D55AF",
+    "operator": "JENG IoT",
+    "color": "hsl(176, 88%, 61%)"
+  },
+  {
+    "prefix": "102CEF",
+    "operator": "EMU Electronic AG",
+    "color": "hsl(211, 78%, 59%)"
+  },
+  {
+    "prefix": "70B3D5CD0",
+    "operator": "Ellenex",
+    "color": "hsl(241, 90%, 55%)"
+  },
+  {
+    "prefix": "BCAF91",
+    "operator": "TE Connectivity",
+    "color": "hsl(353, 87%, 48%)"
+  },
+  {
+    "prefix": "FC48C9",
+    "operator": "YOBIIQ B.V.",
+    "color": "hsl(56, 77%, 53%)"
+  },
+  {
+    "prefix": "0013A2",
+    "operator": "Digi International",
+    "color": "hsl(150, 76%, 71%)"
+  }
 ]

@@ -1,6 +1,22 @@
 [
-  { "prefix": "FE001000/21", "name": "Techtenna" },
-  { "prefix": "FE001800/21", "name": "LNX Solutions" },
-  { "prefix": "FE002000/21", "name": "Cometa" },
-  { "prefix": "FE002800/21", "name": "Senwize" }
+  {
+    "prefix": "FE001000/21",
+    "name": "Techtenna",
+    "color": "hsl(36, 79%, 70%)"
+  },
+  {
+    "prefix": "FE001800/21",
+    "name": "LNX Solutions",
+    "color": "hsl(208, 71%, 66%)"
+  },
+  {
+    "prefix": "FE002000/21",
+    "name": "Cometa",
+    "color": "hsl(292, 73%, 53%)"
+  },
+  {
+    "prefix": "FE002800/21",
+    "name": "Senwize",
+    "color": "hsl(10, 70%, 58%)"
+  }
 ]

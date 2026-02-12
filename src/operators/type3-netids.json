@@ -1,34 +1,162 @@
 [
-  { "prefix": "E0020000/15", "name": "Digita" },
-  { "prefix": "E0040000/15", "name": "Netmore" },
-  { "prefix": "E0060000/15", "name": "QuaeNet" },
-  { "prefix": "E0080000/15", "name": "eleven-x" },
-  { "prefix": "E00A0000/15", "name": "IoT Network AS" },
-  { "prefix": "E00E0000/15", "name": "EDF" },
-  { "prefix": "E0100000/15", "name": "Unidata" },
-  { "prefix": "E0140000/15", "name": "Öresundskraft" },
-  { "prefix": "E01C0000/15", "name": "Spark" },
-  { "prefix": "E0200000/15", "name": "Senet" },
-  { "prefix": "E0260000/15", "name": "Actility" },
-  { "prefix": "E0280000/15", "name": "Kerlink" },
-  { "prefix": "E02C0000/15", "name": "Cisco" },
-  { "prefix": "E02E0000/15", "name": "Schneider Electric" },
-  { "prefix": "E0300000/15", "name": "Minol ZENNER" },
-  { "prefix": "E0340000/15", "name": "NEC" },
-  { "prefix": "E0360000/15", "name": "Tencent" },
-  { "prefix": "E0380000/15", "name": "MachineQ/Comcast" },
-  { "prefix": "E03A0000/15", "name": "NTT" },
-  { "prefix": "E03E0000/15", "name": "KPN" },
-  { "prefix": "E0400000/15", "name": "Spectrum" },
-  { "prefix": "E0420000/15", "name": "Microshare" },
-  { "prefix": "E0480000/15", "name": "Netze BW" },
-  { "prefix": "E04A0000/15", "name": "Tektelic" },
-  { "prefix": "E04E0000/15", "name": "Birdz" },
-  { "prefix": "E0500000/15", "name": "Charter Communication" },
-  { "prefix": "E0520000/15", "name": "Machines Talk" },
-  { "prefix": "E0540000/15", "name": "Neptune Technology" },
-  { "prefix": "E0560000/15", "name": "Amazon" },
-  { "prefix": "E0580000/15", "name": "myDevices" },
-  { "prefix": "E05A0000/15", "name": "Helium" },
-  { "prefix": "E05C0000/15", "name": "Eutelsat" }
+  {
+    "prefix": "E0020000/15",
+    "name": "Digita",
+    "color": "hsl(38, 79%, 49%)"
+  },
+  {
+    "prefix": "E0040000/15",
+    "name": "Netmore",
+    "color": "hsl(256, 89%, 74%)"
+  },
+  {
+    "prefix": "E0060000/15",
+    "name": "QuaeNet",
+    "color": "hsl(146, 85%, 72%)"
+  },
+  {
+    "prefix": "E0080000/15",
+    "name": "eleven-x",
+    "color": "hsl(234, 84%, 67%)"
+  },
+  {
+    "prefix": "E00A0000/15",
+    "name": "IoT Network AS",
+    "color": "hsl(48, 88%, 69%)"
+  },
+  {
+    "prefix": "E00E0000/15",
+    "name": "EDF",
+    "color": "hsl(66, 86%, 61%)"
+  },
+  {
+    "prefix": "E0100000/15",
+    "name": "Unidata",
+    "color": "hsl(74, 80%, 57%)"
+  },
+  {
+    "prefix": "E0140000/15",
+    "name": "Öresundskraft",
+    "color": "hsl(112, 72%, 49%)"
+  },
+  {
+    "prefix": "E01C0000/15",
+    "name": "Spark",
+    "color": "hsl(170, 77%, 68%)"
+  },
+  {
+    "prefix": "E0200000/15",
+    "name": "Senet",
+    "color": "hsl(162, 77%, 65%)"
+  },
+  {
+    "prefix": "E0260000/15",
+    "name": "Actility",
+    "color": "hsl(337, 73%, 62%)"
+  },
+  {
+    "prefix": "E0280000/15",
+    "name": "Kerlink",
+    "color": "hsl(113, 84%, 45%)"
+  },
+  {
+    "prefix": "E02C0000/15",
+    "name": "Cisco",
+    "color": "hsl(152, 81%, 64%)"
+  },
+  {
+    "prefix": "E02E0000/15",
+    "name": "Schneider Electric",
+    "color": "hsl(281, 70%, 53%)"
+  },
+  {
+    "prefix": "E0300000/15",
+    "name": "Minol ZENNER",
+    "color": "hsl(332, 81%, 62%)"
+  },
+  {
+    "prefix": "E0340000/15",
+    "name": "NEC",
+    "color": "hsl(107, 89%, 67%)"
+  },
+  {
+    "prefix": "E0360000/15",
+    "name": "Tencent",
+    "color": "hsl(237, 75%, 61%)"
+  },
+  {
+    "prefix": "E0380000/15",
+    "name": "MachineQ/Comcast",
+    "color": "hsl(230, 78%, 59%)"
+  },
+  {
+    "prefix": "E03A0000/15",
+    "name": "NTT",
+    "color": "hsl(311, 76%, 69%)"
+  },
+  {
+    "prefix": "E03E0000/15",
+    "name": "KPN",
+    "color": "hsl(96, 73%, 72%)"
+  },
+  {
+    "prefix": "E0400000/15",
+    "name": "Spectrum",
+    "color": "hsl(138, 77%, 49%)"
+  },
+  {
+    "prefix": "E0420000/15",
+    "name": "Microshare",
+    "color": "hsl(296, 70%, 47%)"
+  },
+  {
+    "prefix": "E0480000/15",
+    "name": "Netze BW",
+    "color": "hsl(238, 90%, 52%)"
+  },
+  {
+    "prefix": "E04A0000/15",
+    "name": "Tektelic",
+    "color": "hsl(223, 72%, 73%)"
+  },
+  {
+    "prefix": "E04E0000/15",
+    "name": "Birdz",
+    "color": "hsl(352, 77%, 67%)"
+  },
+  {
+    "prefix": "E0500000/15",
+    "name": "Charter Communication",
+    "color": "hsl(169, 74%, 48%)"
+  },
+  {
+    "prefix": "E0520000/15",
+    "name": "Machines Talk",
+    "color": "hsl(130, 74%, 49%)"
+  },
+  {
+    "prefix": "E0540000/15",
+    "name": "Neptune Technology",
+    "color": "hsl(242, 77%, 67%)"
+  },
+  {
+    "prefix": "E0560000/15",
+    "name": "Amazon",
+    "color": "hsl(110, 77%, 55%)"
+  },
+  {
+    "prefix": "E0580000/15",
+    "name": "myDevices",
+    "color": "hsl(272, 86%, 47%)"
+  },
+  {
+    "prefix": "E05A0000/15",
+    "name": "Helium",
+    "color": "#a855f7"
+  },
+  {
+    "prefix": "E05C0000/15",
+    "name": "Eutelsat",
+    "color": "hsl(196, 80%, 61%)"
+  }
 ]
