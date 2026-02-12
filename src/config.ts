@@ -4,18 +4,18 @@ import type { Config } from './types.js';
 
 const DEFAULT_CONFIG: Config = {
   mqtt: {
-    server: 'tcp://localhost:1883',
+    server: 'tcp://172.17.0.1:1883',
     username: '',
     password: '',
-    topic: 'eu868/gateway/+/event/up',
+    topic: '#',
     format: 'protobuf',
   },
   clickhouse: {
-    url: 'http://localhost:8123',
+    url: 'http://clickhouse:8123',
     database: 'lorawan',
   },
   api: {
-    bind: '127.0.0.1:3000',
+    bind: '0.0.0.0:3000',
   },
   operators: [],
   hide_rules: [],

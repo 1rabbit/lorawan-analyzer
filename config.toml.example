@@ -12,28 +12,12 @@
 # If running the analyzer in Docker and ChirpStack is on the host:
 #   Linux:               "tcp://host.docker.internal:1883" or "tcp://172.17.0.1:1883"
 #   macOS/Windows:       "tcp://host.docker.internal:1883"
-server = "tcp://host.docker.internal:1883"
+server = "tcp://172.17.0.1:1883"
 username = ""
 password = ""
 
-# MQTT topic for gateway uplink events.
-# The region prefix (e.g. eu868) must match your ChirpStack Gateway Bridge config.
-# Common values: eu868, us915, as923, au915, in865, etc.
-topic = "eu868/gateway/+/event/up"
-
 # Message format: "protobuf" (default, ChirpStack v4) or "json" (ChirpStack v3 / JSON marshaler)
 format = "protobuf"
-
-[clickhouse]
-# When using Docker Compose, keep this as-is (uses the service name).
-# For native installs, use "http://localhost:8123".
-url = "http://clickhouse:8123"
-database = "lorawan"
-
-[api]
-# For Docker: bind to 0.0.0.0 (container-internal, exposed via docker-compose ports).
-# For native: bind to 127.0.0.1:3000 to restrict to localhost.
-bind = "0.0.0.0:3000"
 
 # Custom operator mappings (optional, higher priority than built-in LoRa Alliance NetID database)
 # Use these to label your own networks or operators not yet in the built-in database.
@@ -59,14 +43,3 @@ bind = "0.0.0.0:3000"
 # type = "join_eui"
 # prefix = "70B3D57ED0000000/64"
 # description = "Hide specific JoinEUI"
-
-# --- Multiplex MQTT setup (advanced) ---
-# If you enabled the bundled mosquitto broker (docker compose --profile multiplex up),
-# you can bridge multiple ChirpStack MQTT sources into it and point the analyzer there:
-#
-# [mqtt]
-# server = "tcp://mosquitto:1883"
-# username = "analyzer"
-# password = "your-password"
-# topic = "eu868/gateway/+/event/up"
-# format = "protobuf"

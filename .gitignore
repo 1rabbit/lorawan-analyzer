@@ -6,8 +6,6 @@ dist/
 
 # Data directories (Docker volumes)
 clickhouse/data/
-mosquitto/data/
-mosquitto/log/
 
 # Runtime configuration (contains credentials)
 config.toml

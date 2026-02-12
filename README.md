@@ -108,30 +108,6 @@ Both operators and hide rules can also be managed at runtime via the API (see be
 
 All other settings (`[clickhouse]`, `[api]`) have sensible defaults for Docker -- see [`config.toml.example`](config.toml.example) for details.
 
-## Multiplex Setup
-
-To aggregate traffic from **multiple ChirpStack instances**, enable the bundled Mosquitto broker:
-
-```bash
-docker compose --profile multiplex up -d
-```
-
-This adds a Mosquitto container on port `15338`. Configure MQTT bridges on each ChirpStack to forward gateway events here, then point the analyzer at it:
-
-```toml
-[mqtt]
-server = "tcp://mosquitto:1883"
-username = "analyzer"
-password = "your-password"
-```
-
-Generate the Mosquitto password file:
-
-```bash
-docker run --rm -v $(pwd)/mosquitto/config:/mosquitto/config eclipse-mosquitto:2 \
-  mosquitto_passwd -b /mosquitto/config/passwd analyzer your-password
-```
-
 ## API
 
 Most endpoints accept `hours` (time window, default varies) and `gateway_id` (filter by gateway) query parameters. Endpoints returning device data also support `filter_mode` (`owned`/`foreign`/`all`) and `prefixes` (comma-separated `HEX/bits` list).

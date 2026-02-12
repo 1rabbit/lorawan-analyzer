@@ -31,24 +31,13 @@ export function connectMqtt(config: MqttConfig): MqttClient {
   client.on('connect', () => {
     console.log('MQTT connected');
 
-    // Subscribe to all gateway events using wildcard
-    // Derive base topic from config (e.g., eu868/gateway/+/event/up -> eu868/gateway/+)
-    const baseTopic = config.topic.replace(/\/event\/up$/, '');
-    const topics = [
-      `${baseTopic}/event/up`,      // Uplinks
-      `${baseTopic}/event/ack`,     // TX acknowledgements (confirms downlink TX)
-      `${baseTopic}/command/down`,  // Downlink commands (scheduled TX)
-    ];
-
-    for (const topic of topics) {
-      client!.subscribe(topic, { qos: 0 }, (err) => {
-        if (err) {
-          console.error(`MQTT subscribe error for ${topic}:`, err);
-        } else {
-          console.log(`Subscribed to: ${topic}`);
-        }
-      });
-    }
+    client!.subscribe(config.topic, { qos: 0 }, (err) => {
+      if (err) {
+        console.error(`MQTT subscribe error for ${config.topic}:`, err);
+      } else {
+        console.log(`Subscribed to: ${config.topic}`);
+      }
+    });
   });
 
   client.on('error', (err) => {
@@ -77,8 +66,7 @@ function getEventType(topic: string): EventType {
 }
 
 function handleMessage(topic: string, message: Buffer, format: 'protobuf' | 'json'): void {
-  // Extract gateway ID from topic
-  // Topic format: eu868/gateway/{gateway_id}/event/up|ack or /command/down
+  // Extract gateway ID from topic (e.g. eu868/gateway/{id}/event/up)
   const parts = topic.split('/');
   const gatewayIdx = parts.indexOf('gateway');
   if (gatewayIdx === -1 || gatewayIdx + 1 >= parts.length) {
