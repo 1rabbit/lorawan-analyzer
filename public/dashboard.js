@@ -19,9 +19,9 @@ function readUrlState() {
   filter.showOwned   = p.get('owned')   !== '0';
   filter.showForeign = p.get('foreign') !== '0';
   return {
-    rssiMin: p.get('rssi_min'),
-    rssiMax: p.get('rssi_max'),
-    search:  p.get('search') || '',
+    rssiMin:      p.get('rssi_min'),
+    rssiMax:      p.get('rssi_max'),
+    deviceSearch: p.get('device_search') || '',
   };
 }
 
@@ -36,8 +36,10 @@ function buildParams() {
   const rssiHi = parseInt(document.getElementById('rssi-max')?.value, 10);
   if (rssiLo > -140) p.set('rssi_min', rssiLo); else p.delete('rssi_min');
   if (rssiHi < -30)  p.set('rssi_max', rssiHi); else p.delete('rssi_max');
-  const searchVal = document.getElementById('device-search')?.value?.trim();
+  const searchVal = document.getElementById('search-input')?.value?.trim();
   if (searchVal) p.set('search', searchVal); else p.delete('search');
+  const deviceSearchVal = document.getElementById('device-search')?.value?.trim();
+  if (deviceSearchVal) p.set('device_search', deviceSearchVal); else p.delete('device_search');
   return p;
 }
 
@@ -65,7 +67,7 @@ let sfChart = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
-  const { rssiMin: initRssiMin, rssiMax: initRssiMax, search: initSearch } = readUrlState();
+  const { rssiMin: initRssiMin, rssiMax: initRssiMax, deviceSearch: initDeviceSearch } = readUrlState();
 
   // Apply URL state to UI before loading data
   document.getElementById('toggle-owned').classList.toggle('active', filter.showOwned);
@@ -109,12 +111,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadAllData();
   });
 
-  // Device search
+  // Header search (gateway group filtering + cross-page search param)
+  const headerSearchEl = document.getElementById('search-input');
+  const initHeaderSearch = new URLSearchParams(location.search).get('search') || '';
+  if (initHeaderSearch) headerSearchEl.value = initHeaderSearch;
+  headerSearchEl.addEventListener('input', () => {
+    renderGatewayTabs();
+    pushUrlState();
+  });
+
+  // Device list search
   const deviceSearchEl = document.getElementById('device-search');
-  if (initSearch) { deviceSearchEl.value = initSearch; deviceSearchText = initSearch.toLowerCase(); }
+  if (initDeviceSearch) { deviceSearchEl.value = initDeviceSearch; deviceSearchText = initDeviceSearch.toLowerCase(); }
   deviceSearchEl.addEventListener('input', (e) => {
     deviceSearchText = e.target.value.toLowerCase();
-    renderGatewayTabs();
     pushUrlState();
     loadDeviceBreakdown();
   });
@@ -170,6 +180,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     filter.showForeign = true;
     deviceSearchText = '';
     document.getElementById('device-search').value = '';
+    document.getElementById('search-input').value = '';
     document.getElementById('rssi-min').value = -140;
     document.getElementById('rssi-max').value = -30;
     rssiFilterMin = -200;
@@ -264,7 +275,7 @@ async function loadGateways() {
 }
 
 function renderGatewayTabs() {
-  buildGatewayTabs(gateways, selectedGateway, 'device-search');
+  buildGatewayTabs(gateways, selectedGateway, 'search-input');
 }
 
 function updateGatewayInfoPanel() {
