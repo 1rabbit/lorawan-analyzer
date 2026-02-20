@@ -1161,7 +1161,8 @@ export async function getRecentPackets(
   hours?: number,
   rssiMin?: number,
   rssiMax?: number,
-  search?: string
+  search?: string,
+  gatewayIds?: string[]
 ): Promise<Array<{
   timestamp: string;
   gateway_id: string;
@@ -1185,6 +1186,9 @@ export async function getRecentPackets(
   const client = getClickHouse();
 
   const gatewayFilter = gatewayId ? 'AND p.gateway_id = {gatewayId:String}' : '';
+  const gatewayIdsFilter = (gatewayIds && gatewayIds.length > 0)
+    ? `AND p.gateway_id IN (${gatewayIds.map(id => `'${id.replace(/'/g, "''")}'`).join(',')})`
+    : '';
   // When filtering by dev_addr, include related tx_ack packets (which have dev_addr=null)
   // by matching on f_cnt (downlink_id) from downlinks belonging to this device
   const devAddrFilter = devAddr
@@ -1284,6 +1288,7 @@ export async function getRecentPackets(
       FROM packets p
       WHERE 1=1
         ${gatewayFilter}
+        ${gatewayIdsFilter}
         ${devAddrFilter}
         ${hoursFilter}
         ${rssiFilter}

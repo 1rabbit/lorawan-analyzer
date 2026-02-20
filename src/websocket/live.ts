@@ -10,13 +10,14 @@ interface DevicePrefix {
 
 interface LiveClient {
   ws: WebSocket;
-  gatewayId: string | null;  // null = all gateways
-  packetTypes: Set<string> | null;  // null = all types
+  gatewayId: string | null;        // null = all gateways
+  gatewayIds: Set<string> | null;  // null = no restriction; used for group filtering
+  packetTypes: Set<string> | null; // null = all types
   rssiMin: number | null;
   rssiMax: number | null;
-  filterMode: string | null;  // 'owned' | 'foreign' | null (all)
+  filterMode: string | null;       // 'owned' | 'foreign' | null (all)
   prefixes: DevicePrefix[];
-  search: string | null;  // lowercase search string, null = no filter
+  search: string | null;           // lowercase search string, null = no filter
 }
 
 const clients: Set<LiveClient> = new Set();
@@ -30,10 +31,12 @@ export function addLiveClient(
   filterMode: string | null = null,
   prefixes: DevicePrefix[] = [],
   search: string | null = null,
+  gatewayIds: string[] | null = null,
 ): void {
   const client: LiveClient = {
     ws,
     gatewayId,
+    gatewayIds: gatewayIds && gatewayIds.length > 0 ? new Set(gatewayIds) : null,
     packetTypes: packetTypes ? new Set(packetTypes) : null,
     rssiMin,
     rssiMax,
@@ -77,6 +80,10 @@ export function broadcastPacket(packet: ParsedPacket): void {
   for (const client of clients) {
     // Filter by gateway if specified
     if (client.gatewayId && client.gatewayId !== packet.gateway_id) {
+      continue;
+    }
+    // Filter by gateway set (group filter)
+    if (client.gatewayIds && !client.gatewayIds.has(packet.gateway_id)) {
       continue;
     }
 

@@ -20,6 +20,13 @@ let filter = { showOwned: true, showForeign: true, prefixes: [] };
 let typeFilter = { up: true, join: true, down: true, ack: true };
 let operatorColors = {};
 
+// Resolve selectedGroup to a list of gateway IDs (null = no filter)
+function resolveGroupToGatewayIds(group) {
+  if (!group) return null;
+  if (group === '__none__') return gateways.filter(gw => !gw.group_name || gw.group_name.trim() === '').map(gw => gw.gateway_id);
+  return gateways.filter(gw => gw.group_name === group).map(gw => gw.gateway_id);
+}
+
 // --- URL state ---
 function readUrlState() {
   const p = new URLSearchParams(location.search);
@@ -179,6 +186,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     selectedGroup = group;
     pushUrlState();
     renderGatewayTabs();
+    reloadWithNewFilter();
   });
 
   // Search input — debounced server-side filter (1000ms)
@@ -329,6 +337,10 @@ async function loadRecentPackets(gatewayId = null) {
     const searchVal = document.getElementById('search-input')?.value?.trim();
     if (searchVal) params.set('search', searchVal);
 
+    // Add group filter (resolved to gateway IDs)
+    const groupGwIds = resolveGroupToGatewayIds(selectedGroup);
+    if (groupGwIds) params.set('gateway_ids', groupGwIds.join(','));
+
     const data = await api(`/api/packets/recent?${params}`);
     const packets = data.packets || [];
 
@@ -412,6 +424,10 @@ function connectWebSocket(gatewayId = null) {
   // Add search filter
   const searchVal = document.getElementById('search-input')?.value?.trim();
   if (searchVal) wsParams.set('search', searchVal);
+
+  // Add group filter (resolved to gateway IDs)
+  const groupGwIds = resolveGroupToGatewayIds(selectedGroup);
+  if (groupGwIds) wsParams.set('gateway_ids', groupGwIds.join(','));
 
   const qs = wsParams.toString();
   if (qs) url += `?${qs}`;
