@@ -97,7 +97,6 @@ body {
 /* Gateway selector */
 .gateway-selector {
   flex-wrap: nowrap;
-  overflow: hidden;
 }
 
 .gateway-tabs-scroll {
