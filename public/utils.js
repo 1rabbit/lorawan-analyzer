@@ -23,10 +23,10 @@ function initGatewayTabs(onSelect) {
 
   const scrollEl = document.querySelector('.gateway-tabs-scroll');
   document.getElementById('gateway-scroll-left').addEventListener('click', () => {
-    scrollEl.scrollBy({ left: -200, behavior: 'smooth' });
+    scrollEl.scrollBy({ left: -600, behavior: 'smooth' });
   });
   document.getElementById('gateway-scroll-right').addEventListener('click', () => {
-    scrollEl.scrollBy({ left: 200, behavior: 'smooth' });
+    scrollEl.scrollBy({ left: 600, behavior: 'smooth' });
   });
 
   document.addEventListener('click', (e) => {
