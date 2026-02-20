@@ -624,7 +624,7 @@ async function loadDeviceBreakdown() {
         const intervalDisplay = d.avg_interval_s > 0 ? formatInterval(d.avg_interval_s) : '—';
         const lossDisplay = d.loss_percent > 0 ? `${d.loss_percent.toFixed(1)}%` : '0%';
         return `
-          <div class="device-detail-item ${isOwned ? 'mine' : ''}" onclick="window.location.href='device.html?addr=${d.dev_addr}'">
+          <div class="device-detail-item ${isOwned ? 'mine' : ''}" onclick="window.location.href='device.html?' + new URLSearchParams({...Object.fromEntries(new URLSearchParams(location.search)), addr: '${d.dev_addr}'}).toString()">
             <div class="device-detail-main">
               <span class="device-addr ${isOwned ? 'text-blue-400' : ''}">${d.dev_addr}</span>
               <span class="device-operator" style="color: ${opColor}">${d.operator || '?'}</span>

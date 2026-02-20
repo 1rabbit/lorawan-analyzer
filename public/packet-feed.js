@@ -231,7 +231,7 @@
     }
 
     if (isDown) {
-      const clickAttr = opts.clickable && p.dev_addr ? `onclick="window.location.href='device.html?addr=${p.dev_addr}'" style="cursor:pointer"` : '';
+      const clickAttr = opts.clickable && p.dev_addr ? `onclick="window.location.href='device.html?' + new URLSearchParams({...Object.fromEntries(new URLSearchParams(location.search)), addr: '${p.dev_addr}'}).toString()" style="cursor:pointer"` : '';
       const operatorCol = opts.showOperator ? `<span class="operator" ${operatorStyle}>${p.operator}</span>` : '';
       const addrCol = opts.showAddr ? `<span class="addr">${p.dev_addr || '?'}</span>` : '';
       return `
@@ -255,7 +255,7 @@
     }
 
     // Uplink
-    const clickAttr = opts.clickable && p.dev_addr ? `onclick="window.location.href='device.html?addr=${p.dev_addr}'" style="cursor:pointer"` : '';
+    const clickAttr = opts.clickable && p.dev_addr ? `onclick="window.location.href='device.html?' + new URLSearchParams({...Object.fromEntries(new URLSearchParams(location.search)), addr: '${p.dev_addr}'}).toString()" style="cursor:pointer"` : '';
     const operatorCol = opts.showOperator ? `<span class="operator" ${operatorStyle}>${p.operator}</span>` : '';
     const addrCol = opts.showAddr ? `<span class="addr ${isMine ? 'mine' : ''}">${p.dev_addr}</span>` : '';
     return `
