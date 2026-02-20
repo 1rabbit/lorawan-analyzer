@@ -18,9 +18,11 @@ function readUrlState() {
   selectedHours   = parseInt(p.get('hours') || '24', 10) || 24;
   filter.showOwned   = p.get('owned')   !== '0';
   filter.showForeign = p.get('foreign') !== '0';
-  const rssiMin = p.get('rssi_min');
-  const rssiMax = p.get('rssi_max');
-  return { rssiMin, rssiMax };
+  return {
+    rssiMin: p.get('rssi_min'),
+    rssiMax: p.get('rssi_max'),
+    search:  p.get('search') || '',
+  };
 }
 
 function pushUrlState() {
@@ -33,18 +35,27 @@ function pushUrlState() {
   const rssiHi = parseInt(document.getElementById('rssi-max')?.value, 10);
   if (rssiLo > -140) p.set('rssi_min', rssiLo);
   if (rssiHi < -30)  p.set('rssi_max', rssiHi);
+  const searchVal = document.getElementById('device-search')?.value?.trim();
+  if (searchVal) p.set('search', searchVal);
   const qs = p.toString();
   history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
   updateNavLinks();
 }
 
-// Keep nav links in sync so cross-page navigation carries owned/foreign
+// Keep all URL params in sync on nav links so cross-page navigation preserves state
 function updateNavLinks() {
   const p = new URLSearchParams();
+  if (selectedGateway) p.set('gw', selectedGateway);
   if (!filter.showOwned)   p.set('owned',   '0');
   if (!filter.showForeign) p.set('foreign', '0');
+  const rssiLo = parseInt(document.getElementById('rssi-min')?.value, 10);
+  const rssiHi = parseInt(document.getElementById('rssi-max')?.value, 10);
+  if (rssiLo > -140) p.set('rssi_min', rssiLo);
+  if (rssiHi < -30)  p.set('rssi_max', rssiHi);
+  const searchVal = document.getElementById('device-search')?.value?.trim();
+  if (searchVal) p.set('search', searchVal);
   const qs = p.toString();
-  document.querySelectorAll('a[href*="live"]').forEach(a => {
+  document.querySelectorAll('nav a').forEach(a => {
     const base = a.href.split('?')[0];
     a.href = qs ? `${base}?${qs}` : base;
   });
@@ -58,7 +69,7 @@ let sfChart = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
-  const { rssiMin: initRssiMin, rssiMax: initRssiMax } = readUrlState();
+  const { rssiMin: initRssiMin, rssiMax: initRssiMax, search: initSearch } = readUrlState();
 
   // Apply URL state to UI before loading data
   document.getElementById('toggle-owned').classList.toggle('active', filter.showOwned);
@@ -103,8 +114,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Device search
-  document.getElementById('device-search').addEventListener('input', (e) => {
+  const deviceSearchEl = document.getElementById('device-search');
+  if (initSearch) { deviceSearchEl.value = initSearch; deviceSearchText = initSearch.toLowerCase(); }
+  deviceSearchEl.addEventListener('input', (e) => {
     deviceSearchText = e.target.value.toLowerCase();
+    pushUrlState();
     loadDeviceBreakdown();
   });
 
@@ -163,6 +177,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (selector.classList.contains('expanded') && !selector.contains(e.target) && !btn.contains(e.target)) {
       collapseGatewaySelector();
     }
+  });
+
+  // Reset all filters
+  document.getElementById('reset-filters').addEventListener('click', () => {
+    selectedGateway = null;
+    filter.showOwned = true;
+    filter.showForeign = true;
+    deviceSearchText = '';
+    document.getElementById('device-search').value = '';
+    document.getElementById('rssi-min').value = -140;
+    document.getElementById('rssi-max').value = -30;
+    rssiFilterMin = -200;
+    rssiFilterMax = 0;
+    updateRssiLabel();
+    document.getElementById('toggle-owned').classList.add('active');
+    document.getElementById('toggle-foreign').classList.add('active');
+    selectGateway(null);
+    pushUrlState();
+    loadAllData();
   });
 
   // Auto-refresh every 30 seconds

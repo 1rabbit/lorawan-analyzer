@@ -54,13 +54,20 @@ function pushUrlState() {
   updateNavLinks();
 }
 
-// Keep nav links in sync so cross-page navigation carries owned/foreign
+// Keep all URL params in sync on nav links so cross-page navigation preserves state
 function updateNavLinks() {
   const p = new URLSearchParams();
+  if (selectedGateway) p.set('gw', selectedGateway);
   if (!filter.showOwned)   p.set('owned',   '0');
   if (!filter.showForeign) p.set('foreign', '0');
+  const rssiLo = parseInt(document.getElementById('rssi-min')?.value, 10);
+  const rssiHi = parseInt(document.getElementById('rssi-max')?.value, 10);
+  if (rssiLo > -140) p.set('rssi_min', rssiLo);
+  if (rssiHi < -30)  p.set('rssi_max', rssiHi);
+  const searchVal = document.getElementById('search-input')?.value?.trim();
+  if (searchVal) p.set('search', searchVal);
   const qs = p.toString();
-  document.querySelectorAll('a[href*="index"], a[href="./"], a[href="/"]').forEach(a => {
+  document.querySelectorAll('nav a').forEach(a => {
     const base = a.href.split('?')[0];
     a.href = qs ? `${base}?${qs}` : base;
   });
@@ -177,6 +184,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   searchEl.addEventListener('input', () => {
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(() => { pushUrlState(); reloadWithNewFilter(); }, 1000);
+  });
+
+  // Reset all filters
+  document.getElementById('reset-filters').addEventListener('click', () => {
+    selectedGateway = null;
+    filter.showOwned = true;
+    filter.showForeign = true;
+    typeFilter = { up: true, join: true, down: true, ack: true };
+    searchEl.value = '';
+    rssiMinEl.value = -140;
+    rssiMaxEl.value = -30;
+    updateRssiLabel();
+    document.getElementById('toggle-owned').classList.add('active');
+    document.getElementById('toggle-foreign').classList.add('active');
+    ['up', 'join', 'down', 'ack'].forEach(k => document.getElementById(`toggle-${k}`).classList.add('active'));
+    applyGatewayActiveState();
+    updateGatewayColumnVisibility();
+    pushUrlState();
+    reloadWithNewFilter();
   });
 
   // Gateway expand/collapse
