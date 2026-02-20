@@ -11,6 +11,7 @@ function parseUTCTimestamp(ts) {
 
 // State
 let selectedGateway = null;
+let selectedHours = 24;  // passed through from dashboard, not used by live
 let liveEntries = [];
 let ws = null;
 let gateways = [];
@@ -22,6 +23,7 @@ let operatorColors = {};
 function readUrlState() {
   const p = new URLSearchParams(location.search);
   selectedGateway = p.get('gw') || null;
+  selectedHours   = parseInt(p.get('hours') || '24', 10) || 24;
   typeFilter.up   = p.get('up')   !== '0';
   typeFilter.join = p.get('join') !== '0';
   typeFilter.down = p.get('down') !== '0';
@@ -37,6 +39,7 @@ function readUrlState() {
 function pushUrlState() {
   const p = new URLSearchParams();
   if (selectedGateway) p.set('gw', selectedGateway);
+  if (selectedHours !== 24) p.set('hours', selectedHours);
   if (!typeFilter.up)   p.set('up',   '0');
   if (!typeFilter.join) p.set('join', '0');
   if (!typeFilter.down) p.set('down', '0');
@@ -58,6 +61,7 @@ function pushUrlState() {
 function updateNavLinks() {
   const p = new URLSearchParams();
   if (selectedGateway) p.set('gw', selectedGateway);
+  if (selectedHours !== 24) p.set('hours', selectedHours);
   if (!filter.showOwned)   p.set('owned',   '0');
   if (!filter.showForeign) p.set('foreign', '0');
   const rssiLo = parseInt(document.getElementById('rssi-min')?.value, 10);

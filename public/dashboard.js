@@ -46,6 +46,7 @@ function pushUrlState() {
 function updateNavLinks() {
   const p = new URLSearchParams();
   if (selectedGateway) p.set('gw', selectedGateway);
+  if (selectedHours !== 24) p.set('hours', selectedHours);
   if (!filter.showOwned)   p.set('owned',   '0');
   if (!filter.showForeign) p.set('foreign', '0');
   const rssiLo = parseInt(document.getElementById('rssi-min')?.value, 10);
