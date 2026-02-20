@@ -93,6 +93,30 @@ known_devices = true
 
 Prefix format: `AABBCCDD/N` -- the upper N bits of the DevAddr are compared. `26000000/20` matches any DevAddr starting with `0x26000...`.
 
+### Gateway Names (`gateways.csv`)
+
+Place a `gateways.csv` file next to `config.toml` to pre-seed gateway names and map coordinates. The file is read at startup — gateways are registered before any packets arrive, so named tabs appear immediately on the dashboard even on a fresh install.
+
+```csv
+id,name,alias,latitude,longitude
+0016c001f184aa22,wifx,backyard pole,46.9480,7.4474
+0016c001f1137226,sensecap,roof panel,,
+7076ff0056071e21,kerlink0,,,
+```
+
+| Column | Required | Description |
+|--------|----------|-------------|
+| `id` | yes | Gateway EUI (hex, lowercase) |
+| `name` | no | Display name shown in tabs and map popups |
+| `alias` | no | Ignored (reserved) |
+| `latitude` | no | Decimal latitude for map pin |
+| `longitude` | no | Decimal longitude for map pin |
+
+- `name` is used as the display label; omit or leave blank to show the raw gateway ID
+- `latitude`/`longitude` must both be present to place a pin on the gateway map
+- If a gateway already exists in the database, only the fields present in the CSV overwrite existing values; existing data is preserved otherwise
+- The file is optional — the analyzer starts normally if it is absent
+
 ### Hide Rules
 
 Suppress specific traffic from the UI:

@@ -6,6 +6,7 @@ dist/
 
 # Data directories (Docker volumes)
 clickhouse/data/
+data/
 
 # Runtime configuration (contains credentials)
 config.toml
@@ -28,3 +29,6 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Misc
+gateways.csv

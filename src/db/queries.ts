@@ -1,4 +1,5 @@
 import { getClickHouse } from './index.js';
+import { getSQLite } from './sqlite.js';
 import type {
   ParsedPacket,
   GatewayStats,
@@ -73,127 +74,114 @@ export async function insertPacket(packet: ParsedPacket): Promise<void> {
   });
 }
 
-export async function upsertGateway(
+export function upsertGateway(
   gatewayId: string,
   name: string | null = null,
   location?: { latitude: number; longitude: number; name?: string } | null
-): Promise<void> {
-  const client = getClickHouse();
-  const now = new Date().toISOString().replace('T', ' ').replace('Z', '');
+): void {
+  const sqlite = getSQLite();
+  const now = new Date().toISOString();
 
-  // Check if gateway exists
-  const result = await client.query({
-    query: `SELECT first_seen, name, latitude, longitude FROM gateways WHERE gateway_id = {gatewayId:String} LIMIT 1`,
-    query_params: { gatewayId },
-    format: 'JSONEachRow',
-  });
+  const existing = sqlite.prepare(
+    'SELECT first_seen, name, latitude, longitude FROM gateways WHERE gateway_id = ?'
+  ).get(gatewayId) as { first_seen: string; name: string | null; latitude: number | null; longitude: number | null } | undefined;
 
-  const rows = await result.json<{ first_seen: string; name: string | null; latitude: number | null; longitude: number | null }>();
+  const gwName = name ?? existing?.name ?? null;
+  const lat = location?.latitude ?? existing?.latitude ?? null;
+  const lng = location?.longitude ?? existing?.longitude ?? null;
 
-  // Use new values if provided, otherwise preserve existing
-  const gwName = name ?? rows[0]?.name ?? null;
-  const lat = location?.latitude ?? rows[0]?.latitude ?? null;
-  const lng = location?.longitude ?? rows[0]?.longitude ?? null;
-
-  if (rows.length === 0) {
-    await client.insert({
-      table: 'gateways',
-      values: [{
-        gateway_id: gatewayId,
-        name: gwName,
-        first_seen: now,
-        last_seen: now,
-        latitude: lat,
-        longitude: lng,
-      }],
-      format: 'JSONEachRow',
-    });
-  } else {
-    await client.insert({
-      table: 'gateways',
-      values: [{
-        gateway_id: gatewayId,
-        name: gwName,
-        first_seen: rows[0].first_seen,
-        last_seen: now,
-        latitude: lat,
-        longitude: lng,
-      }],
-      format: 'JSONEachRow',
-    });
-  }
+  sqlite.prepare(`
+    INSERT INTO gateways (gateway_id, name, first_seen, last_seen, latitude, longitude)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(gateway_id) DO UPDATE SET
+      name = excluded.name,
+      last_seen = excluded.last_seen,
+      latitude = excluded.latitude,
+      longitude = excluded.longitude
+  `).run(gatewayId, gwName, existing?.first_seen ?? now, now, lat, lng);
 }
 
 export async function getGateways(): Promise<GatewayStats[]> {
+  const sqlite = getSQLite();
   const client = getClickHouse();
 
+  // Fetch gateway metadata from SQLite
+  const sqliteRows = sqlite.prepare(
+    'SELECT gateway_id, name, first_seen, last_seen, latitude, longitude FROM gateways'
+  ).all() as Array<{ gateway_id: string; name: string | null; first_seen: string; last_seen: string; latitude: number | null; longitude: number | null }>;
+
+  if (sqliteRows.length === 0) return [];
+
+  // Fetch packet stats from ClickHouse
   const result = await client.query({
     query: `
       SELECT
         gateway_id,
-        any(name) as name,
-        min(first_seen) as first_seen,
-        max(last_seen) as last_seen,
-        COALESCE(p.packet_count, 0) as packet_count,
-        COALESCE(p.unique_devices, 0) as unique_devices,
-        COALESCE(p.total_airtime_us, 0) / 1000 as total_airtime_ms,
-        any(latitude) as latitude,
-        any(longitude) as longitude
-      FROM gateways g
-      LEFT JOIN (
-        SELECT
-          gateway_id,
-          count() as packet_count,
-          uniqExact(dev_addr) as unique_devices,
-          sum(airtime_us) as total_airtime_us
-        FROM packets
-        WHERE timestamp > now() - INTERVAL 24 HOUR
-        GROUP BY gateway_id
-      ) p USING (gateway_id)
-      GROUP BY gateway_id, p.packet_count, p.unique_devices, p.total_airtime_us
-      ORDER BY packet_count DESC
+        count() as packet_count,
+        uniqExact(dev_addr) as unique_devices,
+        sum(airtime_us) / 1000 as total_airtime_ms
+      FROM packets
+      WHERE timestamp > now() - INTERVAL 24 HOUR
+      GROUP BY gateway_id
     `,
     format: 'JSONEachRow',
   });
+  const stats = await result.json<{ gateway_id: string; packet_count: number; unique_devices: number; total_airtime_ms: number }>();
+  const statsMap = new Map(stats.map(s => [s.gateway_id, s]));
 
-  return result.json<GatewayStats>();
+  return sqliteRows
+    .map(gw => ({
+      gateway_id: gw.gateway_id,
+      name: gw.name,
+      first_seen: new Date(gw.first_seen),
+      last_seen: new Date(gw.last_seen),
+      packet_count: statsMap.get(gw.gateway_id)?.packet_count ?? 0,
+      unique_devices: statsMap.get(gw.gateway_id)?.unique_devices ?? 0,
+      total_airtime_ms: statsMap.get(gw.gateway_id)?.total_airtime_ms ?? 0,
+      latitude: gw.latitude,
+      longitude: gw.longitude,
+    }))
+    .filter(gw => gw.packet_count >= 30)
+    .sort((a, b) => b.packet_count - a.packet_count);
 }
 
 export async function getGatewayById(gatewayId: string): Promise<GatewayStats | null> {
+  const sqlite = getSQLite();
   const client = getClickHouse();
+
+  const gw = sqlite.prepare(
+    'SELECT gateway_id, name, first_seen, last_seen, latitude, longitude FROM gateways WHERE gateway_id = ?'
+  ).get(gatewayId) as { gateway_id: string; name: string | null; first_seen: string; last_seen: string; latitude: number | null; longitude: number | null } | undefined;
+
+  if (!gw) return null;
 
   const result = await client.query({
     query: `
       SELECT
-        g.gateway_id,
-        g.name,
-        g.first_seen,
-        g.last_seen,
-        COALESCE(p.packet_count, 0) as packet_count,
-        COALESCE(p.unique_devices, 0) as unique_devices,
-        COALESCE(p.total_airtime_us, 0) / 1000 as total_airtime_ms,
-        g.latitude,
-        g.longitude
-      FROM gateways g
-      LEFT JOIN (
-        SELECT
-          gateway_id,
-          count() as packet_count,
-          uniqExact(dev_addr) as unique_devices,
-          sum(airtime_us) as total_airtime_us
-        FROM packets
-        WHERE gateway_id = {gatewayId:String}
-          AND timestamp > now() - INTERVAL 24 HOUR
-        GROUP BY gateway_id
-      ) p ON g.gateway_id = p.gateway_id
-      WHERE g.gateway_id = {gatewayId:String}
+        count() as packet_count,
+        uniqExact(dev_addr) as unique_devices,
+        sum(airtime_us) / 1000 as total_airtime_ms
+      FROM packets
+      WHERE gateway_id = {gatewayId:String}
+        AND timestamp > now() - INTERVAL 24 HOUR
     `,
     query_params: { gatewayId },
     format: 'JSONEachRow',
   });
+  const rows = await result.json<{ packet_count: number; unique_devices: number; total_airtime_ms: number }>();
+  const stats = rows[0] ?? { packet_count: 0, unique_devices: 0, total_airtime_ms: 0 };
 
-  const rows = await result.json<GatewayStats>();
-  return rows.length > 0 ? rows[0] : null;
+  return {
+    gateway_id: gw.gateway_id,
+    name: gw.name,
+    first_seen: new Date(gw.first_seen),
+    last_seen: new Date(gw.last_seen),
+    packet_count: stats.packet_count,
+    unique_devices: stats.unique_devices,
+    total_airtime_ms: stats.total_airtime_ms,
+    latitude: gw.latitude,
+    longitude: gw.longitude,
+  };
 }
 
 export async function getGatewayOperators(gatewayId: string, hours: number = 24): Promise<OperatorStats[]> {
@@ -561,99 +549,53 @@ export async function getTimeSeries(options: {
 }
 
 // Custom operators
-export async function getCustomOperators(): Promise<Array<{
+export function getCustomOperators(): Array<{
   id: number;
   prefix: string;
   name: string;
   priority: number;
-}>> {
-  const client = getClickHouse();
-
-  const result = await client.query({
-    query: `SELECT id, prefix, name, priority FROM custom_operators ORDER BY priority DESC, id`,
-    format: 'JSONEachRow',
-  });
-
-  return result.json();
+}> {
+  return getSQLite().prepare(
+    'SELECT id, prefix, name, priority FROM custom_operators ORDER BY priority DESC, id'
+  ).all() as Array<{ id: number; prefix: string; name: string; priority: number }>;
 }
 
-export async function addCustomOperator(prefix: string, name: string, priority: number = 0): Promise<number> {
-  const client = getClickHouse();
-
-  // Get next ID
-  const maxResult = await client.query({
-    query: `SELECT max(id) as max_id FROM custom_operators`,
-    format: 'JSONEachRow',
-  });
-  const maxRows = await maxResult.json<{ max_id: number }>();
-  const nextId = (maxRows[0]?.max_id ?? 0) + 1;
-
-  await client.insert({
-    table: 'custom_operators',
-    values: [{ id: nextId, prefix, name, priority }],
-    format: 'JSONEachRow',
-  });
-
-  return nextId;
+export function addCustomOperator(prefix: string, name: string, priority: number = 0): number {
+  const result = getSQLite().prepare(
+    'INSERT INTO custom_operators (prefix, name, priority) VALUES (?, ?, ?)'
+  ).run(prefix, name, priority);
+  return result.lastInsertRowid as number;
 }
 
-export async function deleteCustomOperator(id: number): Promise<void> {
-  const client = getClickHouse();
-
-  await client.command({
-    query: `ALTER TABLE custom_operators DELETE WHERE id = {id:UInt32}`,
-    query_params: { id },
-  });
+export function deleteCustomOperator(id: number): void {
+  getSQLite().prepare('DELETE FROM custom_operators WHERE id = ?').run(id);
 }
 
 // Hide rules
-export async function getHideRules(): Promise<Array<{
+export function getHideRules(): Array<{
   id: number;
   rule_type: string;
   prefix: string;
   description: string | null;
-}>> {
-  const client = getClickHouse();
-
-  const result = await client.query({
-    query: `SELECT id, rule_type, prefix, description FROM hide_rules ORDER BY id`,
-    format: 'JSONEachRow',
-  });
-
-  return result.json();
+}> {
+  return getSQLite().prepare(
+    'SELECT id, rule_type, prefix, description FROM hide_rules ORDER BY id'
+  ).all() as Array<{ id: number; rule_type: string; prefix: string; description: string | null }>;
 }
 
-export async function addHideRule(
+export function addHideRule(
   ruleType: 'dev_addr' | 'join_eui',
   prefix: string,
   description?: string
-): Promise<number> {
-  const client = getClickHouse();
-
-  // Get next ID
-  const maxResult = await client.query({
-    query: `SELECT max(id) as max_id FROM hide_rules`,
-    format: 'JSONEachRow',
-  });
-  const maxRows = await maxResult.json<{ max_id: number }>();
-  const nextId = (maxRows[0]?.max_id ?? 0) + 1;
-
-  await client.insert({
-    table: 'hide_rules',
-    values: [{ id: nextId, rule_type: ruleType, prefix, description: description ?? null }],
-    format: 'JSONEachRow',
-  });
-
-  return nextId;
+): number {
+  const result = getSQLite().prepare(
+    'INSERT INTO hide_rules (rule_type, prefix, description) VALUES (?, ?, ?)'
+  ).run(ruleType, prefix, description ?? null);
+  return result.lastInsertRowid as number;
 }
 
-export async function deleteHideRule(id: number): Promise<void> {
-  const client = getClickHouse();
-
-  await client.command({
-    query: `ALTER TABLE hide_rules DELETE WHERE id = {id:UInt32}`,
-    query_params: { id },
-  });
+export function deleteHideRule(id: number): void {
+  getSQLite().prepare('DELETE FROM hide_rules WHERE id = ?').run(id);
 }
 
 // ============================================
@@ -1281,12 +1223,15 @@ export async function getRecentPackets(
     packetTypeFilter = `AND packet_type IN (${types})`;
   }
 
+  // Build gateway name map from SQLite
+  const gwRows = getSQLite().prepare('SELECT gateway_id, name FROM gateways').all() as Array<{ gateway_id: string; name: string | null }>;
+  const gatewayNames = new Map(gwRows.map(g => [g.gateway_id, g.name]));
+
   const result = await client.query({
     query: `
       SELECT
         p.timestamp,
         p.gateway_id,
-        g.name as gateway_name,
         p.packet_type,
         p.dev_addr,
         p.join_eui,
@@ -1303,11 +1248,6 @@ export async function getRecentPackets(
         p.confirmed,
         p.airtime_us
       FROM packets p
-      LEFT JOIN (
-          SELECT gateway_id, any(name) as name
-          FROM gateways
-          GROUP BY gateway_id
-      ) g ON p.gateway_id = g.gateway_id
       WHERE 1=1
         ${gatewayFilter}
         ${devAddrFilter}
@@ -1322,5 +1262,13 @@ export async function getRecentPackets(
     format: 'JSONEachRow',
   });
 
-  return result.json();
+  type PacketRow = {
+    timestamp: string; gateway_id: string; packet_type: string; dev_addr: string | null;
+    join_eui: string | null; dev_eui: string | null; operator: string; frequency: number;
+    spreading_factor: number | null; bandwidth: number; rssi: number; snr: number;
+    payload_size: number; f_cnt: number | null; f_port: number | null;
+    confirmed: boolean | null; airtime_us: number;
+  };
+  const packets = await result.json<PacketRow>();
+  return packets.map(p => ({ ...p, gateway_name: gatewayNames.get(p.gateway_id) ?? null }));
 }

@@ -11,15 +11,15 @@ import { initOperatorPrefixes } from '../operators/prefixes.js';
 
 export async function operatorRoutes(fastify: FastifyInstance): Promise<void> {
   // List custom operators
-  fastify.get('/api/operators', async () => {
-    const operators = await getCustomOperators();
+  fastify.get('/api/operators', () => {
+    const operators = getCustomOperators();
     return { operators };
   });
 
   // Add custom operator
   fastify.post<{
     Body: { prefix: string; name: string; priority?: number };
-  }>('/api/operators', async (request, reply) => {
+  }>('/api/operators', (request, reply) => {
     const { prefix, name, priority } = request.body;
 
     if (!prefix || !name) {
@@ -27,37 +27,35 @@ export async function operatorRoutes(fastify: FastifyInstance): Promise<void> {
       return { error: 'prefix and name are required' };
     }
 
-    const id = await addCustomOperator(prefix, name, priority ?? 0);
+    const id = addCustomOperator(prefix, name, priority ?? 0);
 
     // Reload operator prefixes
-    const operators = await getCustomOperators();
-    initOperatorPrefixes(operators);
+    initOperatorPrefixes(getCustomOperators());
 
     return { id };
   });
 
   // Delete custom operator
-  fastify.delete<{ Params: { id: string } }>('/api/operators/:id', async (request) => {
+  fastify.delete<{ Params: { id: string } }>('/api/operators/:id', (request) => {
     const id = parseInt(request.params.id, 10);
-    await deleteCustomOperator(id);
+    deleteCustomOperator(id);
 
     // Reload operator prefixes
-    const operators = await getCustomOperators();
-    initOperatorPrefixes(operators);
+    initOperatorPrefixes(getCustomOperators());
 
     return { success: true };
   });
 
   // List hide rules
-  fastify.get('/api/hide-rules', async () => {
-    const rules = await getHideRules();
+  fastify.get('/api/hide-rules', () => {
+    const rules = getHideRules();
     return { rules };
   });
 
   // Add hide rule
   fastify.post<{
     Body: { type: 'dev_addr' | 'join_eui'; prefix: string; description?: string };
-  }>('/api/hide-rules', async (request, reply) => {
+  }>('/api/hide-rules', (request, reply) => {
     const { type, prefix, description } = request.body;
 
     if (!type || !prefix) {
@@ -70,14 +68,14 @@ export async function operatorRoutes(fastify: FastifyInstance): Promise<void> {
       return { error: 'type must be dev_addr or join_eui' };
     }
 
-    const id = await addHideRule(type, prefix, description);
+    const id = addHideRule(type, prefix, description);
     return { id };
   });
 
   // Delete hide rule
-  fastify.delete<{ Params: { id: string } }>('/api/hide-rules/:id', async (request) => {
+  fastify.delete<{ Params: { id: string } }>('/api/hide-rules/:id', (request) => {
     const id = parseInt(request.params.id, 10);
-    await deleteHideRule(id);
+    deleteHideRule(id);
     return { success: true };
   });
 }

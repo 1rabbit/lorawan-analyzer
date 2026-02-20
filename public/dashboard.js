@@ -527,15 +527,16 @@ async function loadTrafficChart() {
   }
 
   const allTimestamps = [...new Set(points.map(p => p.timestamp))].sort();
-  const colors = ['#22c55e', '#3b82f6', '#a855f7', '#f97316', '#eab308', '#ef4444', '#14b8a6'];
 
-  const datasets = Object.entries(groups).map(([name, pts], i) => {
+  const datasets = Object.entries(groups).map(([name, pts]) => {
     const pointMap = new Map(pts.map(p => [p.timestamp, p.value]));
+    const color = getOperatorColor(name);
+    const bgColor = color.startsWith('rgba') ? color.replace(/[\d.]+\)$/, '0.15)') : color + '33';
     return {
       label: name,
       data: allTimestamps.map(t => pointMap.get(t) || 0),
-      borderColor: colors[i % colors.length],
-      backgroundColor: colors[i % colors.length] + '33',
+      borderColor: color,
+      backgroundColor: bgColor,
       fill: true,
       tension: 0.3
     };

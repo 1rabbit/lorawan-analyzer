@@ -26,6 +26,8 @@ services:
     volumes:
       - ./config.toml:/app/config.toml:ro
       - ./public:/app/public:ro
+      - ./gateways.csv:/app/gateways.csv:ro
+      - ./data:/app/data
     environment:
       CONFIG_PATH: /app/config.toml
     depends_on:

@@ -1,6 +1,7 @@
 import type { WebSocket } from '@fastify/websocket';
 import type { ParsedPacket, LivePacket } from '../types.js';
 import { onPacket, removePacketHandler } from '../mqtt/consumer.js';
+import { getSQLite } from '../db/sqlite.js';
 
 interface DevicePrefix {
   prefix: number;
@@ -106,9 +107,12 @@ function convertToLivePacket(packet: ParsedPacket): LivePacket {
     ? `SF${packet.spreading_factor}BW${packet.bandwidth / 1000}`
     : 'Unknown';
 
+  const gwRow = getSQLite().prepare('SELECT name FROM gateways WHERE gateway_id = ?').get(packet.gateway_id) as { name: string | null } | undefined;
+
   const base: LivePacket = {
     timestamp: packet.timestamp.getTime(),
     gateway_id: packet.gateway_id,
+    gateway_name: gwRow?.name ?? undefined,
     type: packet.packet_type,
     operator: packet.operator,
     data_rate: dataRate,

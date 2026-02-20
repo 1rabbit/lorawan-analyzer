@@ -56,63 +56,7 @@ export async function runMigrations(): Promise<void> {
     // Column might already exist - ignore
   }
 
-  // Create gateways table
-  await client.command({
-    query: `
-      CREATE TABLE IF NOT EXISTS gateways (
-        gateway_id String,
-        name Nullable(String),
-        first_seen DateTime64(3),
-        last_seen DateTime64(3)
-      )
-      ENGINE = ReplacingMergeTree(last_seen)
-      ORDER BY gateway_id
-    `,
-  });
-  console.log('  Created gateways table');
-
-  // Add latitude/longitude columns to gateways if they don't exist
-  try {
-    await client.command({
-      query: `ALTER TABLE gateways ADD COLUMN IF NOT EXISTS latitude Nullable(Float64)`,
-    });
-    await client.command({
-      query: `ALTER TABLE gateways ADD COLUMN IF NOT EXISTS longitude Nullable(Float64)`,
-    });
-    console.log('  Added latitude/longitude columns to gateways table');
-  } catch {
-    // Columns might already exist - ignore
-  }
-
-  // Create custom_operators table
-  await client.command({
-    query: `
-      CREATE TABLE IF NOT EXISTS custom_operators (
-        id UInt32,
-        prefix String,
-        name String,
-        priority Int16 DEFAULT 0
-      )
-      ENGINE = MergeTree()
-      ORDER BY id
-    `,
-  });
-  console.log('  Created custom_operators table');
-
-  // Create hide_rules table
-  await client.command({
-    query: `
-      CREATE TABLE IF NOT EXISTS hide_rules (
-        id UInt32,
-        rule_type LowCardinality(String),
-        prefix String,
-        description Nullable(String)
-      )
-      ENGINE = MergeTree()
-      ORDER BY id
-    `,
-  });
-  console.log('  Created hide_rules table');
+  // Note: gateways, custom_operators, and hide_rules tables are now in SQLite
 
   console.log('Migrations complete');
 }

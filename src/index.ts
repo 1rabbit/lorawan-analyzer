@@ -1,5 +1,8 @@
+import path from 'path';
+import fs from 'fs';
 import { loadConfig } from './config.js';
 import { initClickHouse, closeClickHouse } from './db/index.js';
+import { initSQLite, closeSQLite } from './db/sqlite.js';
 import { runMigrations } from './db/migrations.js';
 import { insertPacket, upsertGateway, getCustomOperators } from './db/queries.js';
 import { connectMqtt, onPacket, onGatewayLocation, disconnectMqtt } from './mqtt/consumer.js';
@@ -9,6 +12,21 @@ import { SessionTracker } from './session/tracker.js';
 import type { ParsedPacket, MyDeviceRange, OperatorMapping } from './types.js';
 
 const CONFIG_PATH = process.env.CONFIG_PATH ?? './config.toml';
+
+function seedGatewaysFromCsv(csvPath: string): void {
+  if (!fs.existsSync(csvPath)) return;
+  const lines = fs.readFileSync(csvPath, 'utf8').trim().split('\n');
+  for (const line of lines.slice(1)) {
+    const [id, name, , lat, lng] = line.split(',').map(s => s.trim());
+    if (!id) continue;
+    const displayName = name || null;
+    const location = (lat && lng)
+      ? { latitude: parseFloat(lat), longitude: parseFloat(lng) }
+      : null;
+    upsertGateway(id, displayName, location);
+  }
+  console.log(`Seeded gateways from ${csvPath}`);
+}
 
 function buildKnownDeviceRanges(operators: OperatorMapping[]): MyDeviceRange[] {
   const ranges: MyDeviceRange[] = [];
@@ -39,11 +57,20 @@ async function main(): Promise<void> {
   initClickHouse(config.clickhouse);
   console.log(`ClickHouse client initialized: ${config.clickhouse.url}`);
 
+  // Initialize SQLite
+  const sqlitePath = path.resolve(path.dirname(path.resolve(CONFIG_PATH)), 'data/sqlite.db');
+  initSQLite(sqlitePath);
+  console.log(`SQLite initialized: ${sqlitePath}`);
+
   // Run migrations
   await runMigrations();
 
+  // Seed gateway names from gateways.csv if present
+  const csvPath = path.resolve(path.dirname(path.resolve(CONFIG_PATH)), 'gateways.csv');
+  seedGatewaysFromCsv(csvPath);
+
   // Load custom operators from DB and config
-  const dbOperators = await getCustomOperators();
+  const dbOperators = getCustomOperators();
   const allOperators = [...dbOperators, ...config.operators];
   initOperatorPrefixes(allOperators);
   console.log(`Loaded ${allOperators.length} custom operator mappings`);
@@ -71,7 +98,7 @@ async function main(): Promise<void> {
       await insertPacket(packet);
 
       // Update gateway (with location and name if available from uplink metadata)
-      await upsertGateway(packet.gateway_id, gatewayLocation?.name ?? null, gatewayLocation);
+      upsertGateway(packet.gateway_id, gatewayLocation?.name ?? null, gatewayLocation);
 
       // Log packet info
       let info: string;
@@ -106,9 +133,9 @@ async function main(): Promise<void> {
   });
 
   // Handle gateway location updates from application-level MQTT messages
-  onGatewayLocation(async (gatewayId, location) => {
+  onGatewayLocation((gatewayId, location) => {
     try {
-      await upsertGateway(gatewayId, location.name ?? null, location);
+      upsertGateway(gatewayId, location.name ?? null, location);
     } catch (err) {
       console.error('Error updating gateway location:', err);
     }
@@ -140,6 +167,7 @@ async function shutdown(): Promise<void> {
     sessionTrackerRef?.stopCleanup();
     await disconnectMqtt();
     await closeClickHouse();
+    closeSQLite();
   } catch (err) {
     console.error('Error during shutdown:', err);
   }
