@@ -4,6 +4,7 @@ const BASE_PATH = window.location.pathname.replace(/\/[^/]*$/, '');
 // State
 let selectedGateway = null;
 let selectedHours = 24;
+let selectedGroup = null;
 let gateways = [];
 let filter = { showOwned: true, showForeign: true, prefixes: [] };
 let operatorColors = {};
@@ -16,6 +17,7 @@ function readUrlState() {
   const p = new URLSearchParams(location.search);
   selectedGateway = p.get('gw') || null;
   selectedHours   = parseInt(p.get('hours') || '24', 10) || 24;
+  selectedGroup   = p.get('group') || null;
   filter.showOwned   = p.get('owned')   !== '0';
   filter.showForeign = p.get('foreign') !== '0';
   return {
@@ -38,6 +40,7 @@ function buildParams() {
   if (rssiHi < -30)  p.set('rssi_max', rssiHi); else p.delete('rssi_max');
   const searchVal = document.getElementById('search-input')?.value?.trim();
   if (searchVal) p.set('search', searchVal); else p.delete('search');
+  if (selectedGroup) p.set('group', selectedGroup); else p.delete('group');
   const deviceSearchVal = document.getElementById('device-search')?.value?.trim();
   if (deviceSearchVal) p.set('device_search', deviceSearchVal); else p.delete('device_search');
   return p;
@@ -170,7 +173,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   rssiMinEl.addEventListener('change', () => { pushUrlState(); loadDeviceBreakdown(); });
   rssiMaxEl.addEventListener('change', () => { pushUrlState(); loadDeviceBreakdown(); });
 
-  initGatewayTabs(gwId => selectGateway(gwId));
+  initGatewayTabs(gwId => selectGateway(gwId), group => {
+    selectedGroup = group;
+    pushUrlState();
+    renderGatewayTabs();
+  });
 
   // Reset all filters
   document.getElementById('reset-filters').addEventListener('click', () => {
@@ -179,8 +186,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     filter.showOwned = true;
     filter.showForeign = true;
     deviceSearchText = '';
+    selectedGroup = null;
     document.getElementById('device-search').value = '';
     document.getElementById('search-input').value = '';
+    document.getElementById('group-filter').value = '';
     document.getElementById('rssi-min').value = -140;
     document.getElementById('rssi-max').value = -30;
     rssiFilterMin = -200;
@@ -275,7 +284,7 @@ async function loadGateways() {
 }
 
 function renderGatewayTabs() {
-  buildGatewayTabs(gateways, selectedGateway, 'search-input');
+  buildGatewayTabs(gateways, selectedGateway, 'search-input', selectedGroup);
 }
 
 function updateGatewayInfoPanel() {

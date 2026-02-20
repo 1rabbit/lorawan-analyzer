@@ -755,6 +755,18 @@ body {
   min-width: 80px;
 }
 
+/* Group filter dropdown */
+#group-filter {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+#group-filter option {
+  background: #1a1210;
+  color: rgba(255, 255, 255, 0.8);
+}
+
 /* Dual RSSI range slider */
 .rssi-range-wrap {
   position: relative;

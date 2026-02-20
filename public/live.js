@@ -12,6 +12,7 @@ function parseUTCTimestamp(ts) {
 // State
 let selectedGateway = null;
 let selectedHours = 24;  // passed through from dashboard, not used by live
+let selectedGroup = null;
 let liveEntries = [];
 let ws = null;
 let gateways = [];
@@ -24,6 +25,7 @@ function readUrlState() {
   const p = new URLSearchParams(location.search);
   selectedGateway = p.get('gw') || null;
   selectedHours   = parseInt(p.get('hours') || '24', 10) || 24;
+  selectedGroup   = p.get('group') || null;
   typeFilter.up   = p.get('up')   !== '0';
   typeFilter.join = p.get('join') !== '0';
   typeFilter.down = p.get('down') !== '0';
@@ -48,6 +50,7 @@ function buildParams() {
   if (!filter.showForeign) p.set('foreign', '0'); else p.delete('foreign');
   const searchVal = document.getElementById('search-input')?.value?.trim();
   if (searchVal) p.set('search', searchVal); else p.delete('search');
+  if (selectedGroup) p.set('group', selectedGroup); else p.delete('group');
   const rssiLo = parseInt(document.getElementById('rssi-min')?.value, 10);
   const rssiHi = parseInt(document.getElementById('rssi-max')?.value, 10);
   if (rssiLo > -140) p.set('rssi_min', rssiLo); else p.delete('rssi_min');
@@ -172,7 +175,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     reloadWithNewFilter();
   });
 
-  initGatewayTabs(gwId => selectGateway(gwId));
+  initGatewayTabs(gwId => selectGateway(gwId), group => {
+    selectedGroup = group;
+    pushUrlState();
+    renderGatewayTabs();
+  });
 
   // Search input — debounced server-side filter (1000ms)
   let searchDebounceTimer = null;
@@ -186,6 +193,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('reset-filters').addEventListener('click', () => {
     selectedGateway = null;
     selectedHours = 24;
+    selectedGroup = null;
+    document.getElementById('group-filter').value = '';
     filter.showOwned = true;
     filter.showForeign = true;
     typeFilter = { up: true, join: true, down: true, ack: true };
@@ -260,7 +269,7 @@ async function loadGateways() {
 }
 
 function renderGatewayTabs() {
-  buildGatewayTabs(gateways, selectedGateway, 'search-input');
+  buildGatewayTabs(gateways, selectedGateway, 'search-input', selectedGroup);
   updateGatewayColumnVisibility();
 }
 

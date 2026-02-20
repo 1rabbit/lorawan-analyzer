@@ -11,12 +11,16 @@ function formatNumber(n) {
 
 let _gwOnSelect = null;
 
-function initGatewayTabs(onSelect) {
+function initGatewayTabs(onSelect, onGroupChange) {
   _gwOnSelect = onSelect;
 
   document.querySelector('.gateway-tab[data-gateway=""]').addEventListener('click', () => {
     onSelect(null);
     collapseGatewaySelector();
+  });
+
+  document.getElementById('group-filter').addEventListener('change', (e) => {
+    if (onGroupChange) onGroupChange(e.target.value || null);
   });
 
   document.getElementById('gateway-expand-btn').addEventListener('click', toggleGatewayExpand);
@@ -39,19 +43,29 @@ function initGatewayTabs(onSelect) {
   });
 }
 
-function buildGatewayTabs(gateways, selectedGateway, searchInputId) {
+function buildGatewayTabs(gateways, selectedGateway, searchInputId, selectedGroup) {
   const container = document.getElementById('gateway-tabs');
 
-  // Filter tabs if search exactly matches a group name
-  const searchVal = searchInputId
-    ? (document.getElementById(searchInputId)?.value?.trim().toLowerCase() || '')
-    : '';
-  const groupMatch = searchVal
-    ? gateways.find(gw => gw.group_name && gw.group_name.toLowerCase() === searchVal)
-    : null;
-  const visible = groupMatch
-    ? gateways.filter(gw => gw.group_name && gw.group_name.toLowerCase() === searchVal)
-    : gateways;
+  // Populate group dropdown
+  const groupSelect = document.getElementById('group-filter');
+  if (groupSelect) {
+    const groups = [...new Set(gateways.map(gw => gw.group_name).filter(Boolean))].sort();
+    const hasNoGroup = gateways.some(gw => !gw.group_name);
+    const current = groupSelect.value;
+    groupSelect.innerHTML = '<option value="">All Groups</option>' +
+      groups.map(g => `<option value="${g}">${g}</option>`).join('') +
+      (hasNoGroup ? '<option value="__none__">No Group</option>' : '');
+    // Restore selection (prefer selectedGroup arg, else keep current)
+    groupSelect.value = selectedGroup !== undefined ? (selectedGroup || '') : current;
+  }
+
+  // Filter tabs by selected group
+  const activeGroup = selectedGroup !== undefined ? selectedGroup : (groupSelect?.value || null);
+  const visible = activeGroup === '__none__'
+    ? gateways.filter(gw => !gw.group_name)
+    : activeGroup
+      ? gateways.filter(gw => gw.group_name === activeGroup)
+      : gateways;
 
   container.innerHTML = visible.map(gw => {
     const label = gw.name || gw.gateway_id;
