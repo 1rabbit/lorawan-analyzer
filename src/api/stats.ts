@@ -56,7 +56,7 @@ export async function statsRoutes(fastify: FastifyInstance): Promise<void> {
 
   // Get recent packets for live stream initial load
   fastify.get<{
-    Querystring: { limit?: string; gateway_id?: string; filter_mode?: string; prefixes?: string; packet_types?: string; dev_addr?: string; hours?: string; rssi_min?: string; rssi_max?: string };
+    Querystring: { limit?: string; gateway_id?: string; filter_mode?: string; prefixes?: string; packet_types?: string; dev_addr?: string; hours?: string; rssi_min?: string; rssi_max?: string; search?: string };
   }>('/api/packets/recent', async (request) => {
     const limit = parseInt(request.query.limit ?? '100', 10);
     const filterMode = request.query.filter_mode || 'all';
@@ -66,7 +66,8 @@ export async function statsRoutes(fastify: FastifyInstance): Promise<void> {
     const hours = request.query.hours ? parseInt(request.query.hours, 10) : undefined;
     const rssiMin = request.query.rssi_min ? parseInt(request.query.rssi_min, 10) : undefined;
     const rssiMax = request.query.rssi_max ? parseInt(request.query.rssi_max, 10) : undefined;
-    const packets = await getRecentPackets(limit, request.query.gateway_id, deviceFilter, packetTypes, devAddr, hours, rssiMin, rssiMax);
+    const search = request.query.search && request.query.search.trim() ? request.query.search.trim() : undefined;
+    const packets = await getRecentPackets(limit, request.query.gateway_id, deviceFilter, packetTypes, devAddr, hours, rssiMin, rssiMax, search);
     return { packets };
   });
 

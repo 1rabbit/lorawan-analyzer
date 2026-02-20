@@ -17,13 +17,12 @@ function seedGatewaysFromCsv(csvPath: string): void {
   if (!fs.existsSync(csvPath)) return;
   const lines = fs.readFileSync(csvPath, 'utf8').trim().split('\n');
   for (const line of lines.slice(1)) {
-    const [id, name, , lat, lng] = line.split(',').map(s => s.trim());
+    const [id, name, alias, group, lat, lng] = line.split(',').map(s => s.trim());
     if (!id) continue;
-    const displayName = name || null;
     const location = (lat && lng)
       ? { latitude: parseFloat(lat), longitude: parseFloat(lng) }
       : null;
-    upsertGateway(id, displayName, location);
+    upsertGateway(id, name || null, location, alias || null, group || null);
   }
   console.log(`Seeded gateways from ${csvPath}`);
 }

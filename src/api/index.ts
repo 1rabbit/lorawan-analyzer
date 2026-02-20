@@ -42,7 +42,7 @@ export async function startApi(config: ApiConfig, myDevices: MyDeviceRange[] = [
   await fastify.register(configRoutes);
 
   // Parse WS filter params shared by both live endpoints
-  function parseLiveFilters(query: { types?: string; rssi_min?: string; rssi_max?: string; filter_mode?: string; prefixes?: string }) {
+  function parseLiveFilters(query: { types?: string; rssi_min?: string; rssi_max?: string; filter_mode?: string; prefixes?: string; search?: string }) {
     const packetTypes = query.types ? query.types.split(',') : null;
     const rssiMin = query.rssi_min ? parseInt(query.rssi_min, 10) : null;
     const rssiMax = query.rssi_max ? parseInt(query.rssi_max, 10) : null;
@@ -54,19 +54,20 @@ export async function startApi(config: ApiConfig, myDevices: MyDeviceRange[] = [
       const mask = bits === 0 ? 0 : (0xFFFFFFFF << (32 - bits)) >>> 0;
       return { prefix: (prefix & mask) >>> 0, mask };
     }) : [];
-    return { packetTypes, rssiMin, rssiMax, filterMode, prefixes };
+    const search = query.search && query.search.trim() ? query.search.trim() : null;
+    return { packetTypes, rssiMin, rssiMax, filterMode, prefixes, search };
   }
 
   // WebSocket live feed - all gateways
-  fastify.get<{ Querystring: { types?: string; rssi_min?: string; rssi_max?: string; filter_mode?: string; prefixes?: string } }>('/api/live', { websocket: true }, (socket, request) => {
+  fastify.get<{ Querystring: { types?: string; rssi_min?: string; rssi_max?: string; filter_mode?: string; prefixes?: string; search?: string } }>('/api/live', { websocket: true }, (socket, request) => {
     const f = parseLiveFilters(request.query);
-    addLiveClient(socket, null, f.packetTypes, f.rssiMin, f.rssiMax, f.filterMode, f.prefixes);
+    addLiveClient(socket, null, f.packetTypes, f.rssiMin, f.rssiMax, f.filterMode, f.prefixes, f.search);
   });
 
   // WebSocket live feed - specific gateway
-  fastify.get<{ Params: { id: string }; Querystring: { types?: string; rssi_min?: string; rssi_max?: string; filter_mode?: string; prefixes?: string } }>('/api/live/:id', { websocket: true }, (socket, request) => {
+  fastify.get<{ Params: { id: string }; Querystring: { types?: string; rssi_min?: string; rssi_max?: string; filter_mode?: string; prefixes?: string; search?: string } }>('/api/live/:id', { websocket: true }, (socket, request) => {
     const f = parseLiveFilters(request.query);
-    addLiveClient(socket, request.params.id, f.packetTypes, f.rssiMin, f.rssiMax, f.filterMode, f.prefixes);
+    addLiveClient(socket, request.params.id, f.packetTypes, f.rssiMin, f.rssiMax, f.filterMode, f.prefixes, f.search);
   });
 
   // Start live broadcast

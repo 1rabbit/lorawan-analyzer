@@ -92,6 +92,8 @@ export interface LivePacket {
 export interface GatewayStats {
   gateway_id: string;
   name: string | null;
+  alias: string | null;
+  group_name: string | null;
   first_seen: Date;
   last_seen: Date;
   packet_count: number;

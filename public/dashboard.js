@@ -331,16 +331,15 @@ function collapseGatewaySelector() {
 
 function updateGatewayInfoPanel() {
   const panel = document.getElementById('gateway-info-panel');
-  const nameEl = document.getElementById('gateway-info-name');
-  const idEl = document.getElementById('gateway-info-id');
-
-  if (!panel || !nameEl || !idEl) return;
+  if (!panel) return;
 
   if (selectedGateway) {
     const gw = gateways.find(g => g.gateway_id === selectedGateway);
     if (gw) {
-      nameEl.textContent = gw.name || 'Unnamed';
-      idEl.textContent = gw.gateway_id;
+      document.getElementById('gateway-info-name').textContent = gw.name || 'Unnamed';
+      document.getElementById('gateway-info-alias').textContent = gw.alias || '—';
+      document.getElementById('gateway-info-group').textContent = gw.group_name || '—';
+      document.getElementById('gateway-info-id').textContent = gw.gateway_id;
       panel.classList.remove('hidden');
       return;
     }

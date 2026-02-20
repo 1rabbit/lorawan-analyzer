@@ -187,6 +187,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     collapseGatewaySelector();
   });
 
+  // Search input — debounced server-side filter (1000ms)
+  let searchDebounceTimer = null;
+  document.getElementById('search-input').addEventListener('input', () => {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => reloadWithNewFilter(), 1000);
+  });
+
   // Gateway expand/collapse
   document.getElementById('gateway-expand-btn').addEventListener('click', toggleGatewayExpand);
   document.addEventListener('click', (e) => {
@@ -367,6 +374,10 @@ async function loadRecentPackets(gatewayId = null) {
     if (rssiLo > -140) params.set('rssi_min', rssiLo);
     if (rssiHi < -30) params.set('rssi_max', rssiHi);
 
+    // Add search filter
+    const searchVal = document.getElementById('search-input')?.value?.trim();
+    if (searchVal) params.set('search', searchVal);
+
     const data = await api(`/api/packets/recent?${params}`);
     const packets = data.packets || [];
 
@@ -446,6 +457,10 @@ function connectWebSocket(gatewayId = null) {
     wsParams.set('filter_mode', 'foreign');
     wsParams.set('prefixes', filter.prefixes.join(','));
   }
+
+  // Add search filter
+  const searchVal = document.getElementById('search-input')?.value?.trim();
+  if (searchVal) wsParams.set('search', searchVal);
 
   const qs = wsParams.toString();
   if (qs) url += `?${qs}`;

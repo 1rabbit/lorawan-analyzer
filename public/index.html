@@ -70,8 +70,8 @@
       <!-- Content Area -->
       <div class="flex-1 overflow-auto">
         <!-- Overview Section -->
-        <div class="p-6">
-          <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4 mb-6">
+        <div class="p-3">
+        <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 mb-3">
             <!-- Stats Cards -->
             <div class="stat-card">
               <div class="label">Packets</div>
@@ -108,8 +108,8 @@
           </div>
           
           <!-- Charts Row -->
-          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-  
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-3 mb-3">
+            
             <!-- Gateway Map -->
             <div id="gateway-map-card" class="chart-card">
               <h3 class="chart-title">Gateway Map</h3>
@@ -131,9 +131,31 @@
               </div>
             </div>
           </div>
-
+          
+            <!-- Gateway Info -->
+            <div id="gateway-info-panel" class="panel mb-3 hidden">
+              <div class="flex flex-wrap gap-x-6 gap-y-1 items-center">
+                <div class="flex items-center gap-2">
+                  <span class="text-white/50 text-xs">ID:</span>
+                  <span id="gateway-info-id" class="text-xs text-white/80 select-all"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-white/50 text-xs">NAME:</span>
+                  <span id="gateway-info-name" class="text-xs text-white/80 select-all"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-white/50 text-xs">ALIAS:</span>
+                  <span id="gateway-info-alias" class="text-xs text-white/80 select-all"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-white/50 text-xs">GROUP:</span>
+                  <span id="gateway-info-group" class="text-xs text-white/80 select-all"></span>
+                </div>
+              </div>
+            </div>
+          
           <!-- Charts Row 2 -->
-          <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+          <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 mb-3">
             <!-- Channel Usage -->
             <div class="panel">
               <h3 class="panel-title">Channel Usage</h3>
@@ -157,20 +179,6 @@
             <div class="panel">
               <h3 class="panel-title">Recent Joins</h3>
               <div id="recent-joins" class="space-y-1 max-h-48 overflow-y-auto"></div>
-            </div>
-          </div>
-
-          <!-- Gateway Info -->
-          <div id="gateway-info-panel" class="panel mb-6 hidden">
-            <div class="flex flex-col md:flex-row gap-4 justify-between items-center">
-              <div class="flex items-center gap-2">
-                <span class="text-white/50 text-xs">NAME:</span>
-                <span id="gateway-info-name" class="text-xs select-all"></span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="text-white/50 text-xs">ID:</span>
-                <span id="gateway-info-id" class="font-mono text-white/80 text-xs select-all"></span>
-              </div>
             </div>
           </div>
 

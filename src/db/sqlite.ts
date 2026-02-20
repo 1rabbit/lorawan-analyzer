@@ -12,6 +12,8 @@ export function initSQLite(dbPath: string): DatabaseType {
     CREATE TABLE IF NOT EXISTS gateways (
       gateway_id TEXT PRIMARY KEY,
       name TEXT,
+      alias TEXT,
+      group_name TEXT,
       first_seen TEXT NOT NULL,
       last_seen TEXT NOT NULL,
       latitude REAL,
@@ -32,6 +34,12 @@ export function initSQLite(dbPath: string): DatabaseType {
       description TEXT
     );
   `);
+
+  // Migrate existing gateways table if columns are missing
+  const cols = db.prepare('PRAGMA table_info(gateways)').all() as Array<{ name: string }>;
+  const colNames = cols.map(c => c.name);
+  if (!colNames.includes('alias')) db.exec('ALTER TABLE gateways ADD COLUMN alias TEXT');
+  if (!colNames.includes('group_name')) db.exec('ALTER TABLE gateways ADD COLUMN group_name TEXT');
 
   return db;
 }

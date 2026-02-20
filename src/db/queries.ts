@@ -77,28 +77,34 @@ export async function insertPacket(packet: ParsedPacket): Promise<void> {
 export function upsertGateway(
   gatewayId: string,
   name: string | null = null,
-  location?: { latitude: number; longitude: number; name?: string } | null
+  location?: { latitude: number; longitude: number; name?: string } | null,
+  alias: string | null = null,
+  groupName: string | null = null
 ): void {
   const sqlite = getSQLite();
   const now = new Date().toISOString();
 
   const existing = sqlite.prepare(
-    'SELECT first_seen, name, latitude, longitude FROM gateways WHERE gateway_id = ?'
-  ).get(gatewayId) as { first_seen: string; name: string | null; latitude: number | null; longitude: number | null } | undefined;
+    'SELECT first_seen, name, alias, group_name, latitude, longitude FROM gateways WHERE gateway_id = ?'
+  ).get(gatewayId) as { first_seen: string; name: string | null; alias: string | null; group_name: string | null; latitude: number | null; longitude: number | null } | undefined;
 
   const gwName = name ?? existing?.name ?? null;
+  const gwAlias = alias ?? existing?.alias ?? null;
+  const gwGroup = groupName ?? existing?.group_name ?? null;
   const lat = location?.latitude ?? existing?.latitude ?? null;
   const lng = location?.longitude ?? existing?.longitude ?? null;
 
   sqlite.prepare(`
-    INSERT INTO gateways (gateway_id, name, first_seen, last_seen, latitude, longitude)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO gateways (gateway_id, name, alias, group_name, first_seen, last_seen, latitude, longitude)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(gateway_id) DO UPDATE SET
       name = excluded.name,
+      alias = excluded.alias,
+      group_name = excluded.group_name,
       last_seen = excluded.last_seen,
       latitude = excluded.latitude,
       longitude = excluded.longitude
-  `).run(gatewayId, gwName, existing?.first_seen ?? now, now, lat, lng);
+  `).run(gatewayId, gwName, gwAlias, gwGroup, existing?.first_seen ?? now, now, lat, lng);
 }
 
 export async function getGateways(): Promise<GatewayStats[]> {
@@ -107,8 +113,8 @@ export async function getGateways(): Promise<GatewayStats[]> {
 
   // Fetch gateway metadata from SQLite
   const sqliteRows = sqlite.prepare(
-    'SELECT gateway_id, name, first_seen, last_seen, latitude, longitude FROM gateways'
-  ).all() as Array<{ gateway_id: string; name: string | null; first_seen: string; last_seen: string; latitude: number | null; longitude: number | null }>;
+    'SELECT gateway_id, name, alias, group_name, first_seen, last_seen, latitude, longitude FROM gateways'
+  ).all() as Array<{ gateway_id: string; name: string | null; alias: string | null; group_name: string | null; first_seen: string; last_seen: string; latitude: number | null; longitude: number | null }>;
 
   if (sqliteRows.length === 0) return [];
 
@@ -133,6 +139,8 @@ export async function getGateways(): Promise<GatewayStats[]> {
     .map(gw => ({
       gateway_id: gw.gateway_id,
       name: gw.name,
+      alias: gw.alias,
+      group_name: gw.group_name,
       first_seen: new Date(gw.first_seen),
       last_seen: new Date(gw.last_seen),
       packet_count: statsMap.get(gw.gateway_id)?.packet_count ?? 0,
@@ -150,8 +158,8 @@ export async function getGatewayById(gatewayId: string): Promise<GatewayStats | 
   const client = getClickHouse();
 
   const gw = sqlite.prepare(
-    'SELECT gateway_id, name, first_seen, last_seen, latitude, longitude FROM gateways WHERE gateway_id = ?'
-  ).get(gatewayId) as { gateway_id: string; name: string | null; first_seen: string; last_seen: string; latitude: number | null; longitude: number | null } | undefined;
+    'SELECT gateway_id, name, alias, group_name, first_seen, last_seen, latitude, longitude FROM gateways WHERE gateway_id = ?'
+  ).get(gatewayId) as { gateway_id: string; name: string | null; alias: string | null; group_name: string | null; first_seen: string; last_seen: string; latitude: number | null; longitude: number | null } | undefined;
 
   if (!gw) return null;
 
@@ -174,6 +182,8 @@ export async function getGatewayById(gatewayId: string): Promise<GatewayStats | 
   return {
     gateway_id: gw.gateway_id,
     name: gw.name,
+    alias: gw.alias,
+    group_name: gw.group_name,
     first_seen: new Date(gw.first_seen),
     last_seen: new Date(gw.last_seen),
     packet_count: stats.packet_count,
@@ -1150,7 +1160,8 @@ export async function getRecentPackets(
   devAddr?: string,
   hours?: number,
   rssiMin?: number,
-  rssiMax?: number
+  rssiMax?: number,
+  search?: string
 ): Promise<Array<{
   timestamp: string;
   gateway_id: string;
@@ -1223,9 +1234,9 @@ export async function getRecentPackets(
     packetTypeFilter = `AND packet_type IN (${types})`;
   }
 
-  // Build gateway name map from SQLite
-  const gwRows = getSQLite().prepare('SELECT gateway_id, name FROM gateways').all() as Array<{ gateway_id: string; name: string | null }>;
-  const gatewayNames = new Map(gwRows.map(g => [g.gateway_id, g.name]));
+  // Build gateway metadata map from SQLite (name, alias, group_name for search)
+  const gwRows = getSQLite().prepare('SELECT gateway_id, name, alias, group_name FROM gateways').all() as Array<{ gateway_id: string; name: string | null; alias: string | null; group_name: string | null }>;
+  const gatewayMeta = new Map(gwRows.map(g => [g.gateway_id, g]));
 
   const result = await client.query({
     query: `
@@ -1270,5 +1281,26 @@ export async function getRecentPackets(
     confirmed: boolean | null; airtime_us: number;
   };
   const packets = await result.json<PacketRow>();
-  return packets.map(p => ({ ...p, gateway_name: gatewayNames.get(p.gateway_id) ?? null }));
+  const mapped = packets.map(p => {
+    const gw = gatewayMeta.get(p.gateway_id);
+    return { ...p, gateway_name: gw?.name ?? null };
+  });
+
+  if (!search) return mapped;
+
+  const needle = search.toLowerCase();
+  return mapped.filter(p => {
+    const gw = gatewayMeta.get(p.gateway_id);
+    const haystack = [
+      p.gateway_id,
+      gw?.name,
+      gw?.alias,
+      gw?.group_name,
+      p.operator,
+      p.dev_addr,
+      p.dev_eui,
+      p.join_eui,
+    ].filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(needle);
+  });
 }
