@@ -190,6 +190,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Reset all filters
   document.getElementById('reset-filters').addEventListener('click', () => {
     selectedGateway = null;
+    selectedHours = 24;
     filter.showOwned = true;
     filter.showForeign = true;
     typeFilter = { up: true, join: true, down: true, ack: true };

@@ -170,6 +170,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Reset all filters
   document.getElementById('reset-filters').addEventListener('click', () => {
     selectedGateway = null;
+    selectedHours = 24;
     filter.showOwned = true;
     filter.showForeign = true;
     deviceSearchText = '';
@@ -181,6 +182,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateRssiLabel();
     document.getElementById('toggle-owned').classList.add('active');
     document.getElementById('toggle-foreign').classList.add('active');
+    document.querySelectorAll('.time-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.hours, 10) === 24));
     selectGateway(null);
     pushUrlState();
     loadAllData();
