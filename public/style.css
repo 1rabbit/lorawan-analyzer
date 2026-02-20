@@ -94,13 +94,19 @@ body {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Gateway selector: collapsed = single row, clipped */
+/* Gateway selector: collapsed = single row, horizontally scrollable */
 .gateway-selector {
   flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+}
+
+.gateway-selector::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
 }
 
 #gateway-tabs {
-  overflow: hidden;
+  overflow: visible;
   flex-wrap: nowrap;
   min-width: 0;
 }
@@ -108,25 +114,33 @@ body {
 /* Expanded: wrap onto multiple lines */
 .gateway-selector.expanded {
   flex-wrap: wrap;
-  max-height: 60vh;
+  overflow-x: hidden;
   overflow-y: auto;
+  max-height: 60vh;
 }
 
 .gateway-selector.expanded #gateway-tabs {
-  overflow: visible;
   flex-wrap: wrap;
+}
+
+.gateway-selector.expanded .gateway-expand-btn {
+  position: static;
+  background: transparent;
+  align-self: flex-start;
 }
 
 /* Expand button */
 .gateway-expand-btn {
   color: rgba(255, 255, 255, 0.5);
-  background: transparent;
+  background: rgba(24, 14, 10, 0.9);
   border: none;
   cursor: pointer;
   flex-shrink: 0;
   transition: all 0.15s;
   display: flex;
   align-items: center;
+  position: sticky;
+  right: 0;
 }
 
 .gateway-expand-btn:hover {
