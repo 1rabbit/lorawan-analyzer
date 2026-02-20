@@ -24,7 +24,6 @@
             <a href="live.html" class="nav-link px-3 py-1 rounded text-sm">Live Stream</a>
           </nav>
           <div class="border-l border-white/20 h-4"></div>
-          <input type="text" id="device-search" placeholder="Search devices..." class="bg-white/10 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/40 w-40 focus:outline-none focus:border-white/40">
           <div class="flex items-center gap-1 text-xs text-white/60">
             <span>RSSI</span>
             <div class="rssi-range-wrap">
@@ -185,7 +184,10 @@
 
           <!-- Devices List -->
           <div class="panel">
-            <h3 class="panel-title">Devices</h3>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="panel-title mb-0">Devices</h3>
+              <input type="text" id="device-search" placeholder="Search..." class="bg-white/10 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/40 w-36 focus:outline-none focus:border-white/40">
+            </div>
             <div id="device-list" class="space-y-1 max-h-[500px] overflow-y-auto"></div>
           </div>
 
