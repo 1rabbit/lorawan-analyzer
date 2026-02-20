@@ -266,7 +266,7 @@ async function loadGateways() {
 }
 
 function renderGatewayTabs() {
-  window.renderGatewayTabs(gateways, selectedGateway, 'device-search');
+  buildGatewayTabs(gateways, selectedGateway, 'device-search');
 }
 
 function updateGatewayInfoPanel() {
@@ -290,7 +290,7 @@ function updateGatewayInfoPanel() {
 function selectGateway(gatewayId) {
   selectedGateway = gatewayId;
   pushUrlState();
-  applyGatewayActiveState(gateways, selectedGateway);
+  renderGatewayTabs();
   updateGatewayInfoPanel();
 
   // Update map based on selection

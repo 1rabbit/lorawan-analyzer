@@ -7,8 +7,7 @@ function formatNumber(n) {
 }
 
 // --- Shared gateway tab rendering ---
-// Call initGatewayTabs(onSelect) once on page load, passing a page-specific callback.
-// Call renderGatewayTabs(gateways, selectedGateway, searchInputId) to (re)render.
+// Each page calls initGatewayTabs(onSelect) once, then buildGatewayTabs(gateways, selectedGateway, searchInputId) to render.
 
 let _gwOnSelect = null;
 
@@ -32,7 +31,7 @@ function initGatewayTabs(onSelect) {
   });
 }
 
-window.renderGatewayTabs = function renderGatewayTabs(gateways, selectedGateway, searchInputId) {
+function buildGatewayTabs(gateways, selectedGateway, searchInputId) {
   const container = document.getElementById('gateway-tabs');
 
   // Filter tabs if search exactly matches a group name
@@ -59,17 +58,15 @@ window.renderGatewayTabs = function renderGatewayTabs(gateways, selectedGateway,
     });
   });
 
-  applyGatewayActiveState(gateways, selectedGateway);
-  document.getElementById('gateway-expand-btn').style.display = gateways.length > 0 ? '' : 'none';
-};
-
-function applyGatewayActiveState(gateways, selectedGateway) {
+  // Apply active state across all tabs (static "All" + dynamic ones)
   const validSelected = selectedGateway && gateways.some(gw => gw.gateway_id === selectedGateway)
     ? selectedGateway : null;
   document.querySelectorAll('.gateway-tab').forEach(tab => {
     const gwId = tab.dataset.gateway || null;
     tab.classList.toggle('active', validSelected ? gwId === validSelected : gwId === null);
   });
+
+  document.getElementById('gateway-expand-btn').style.display = gateways.length > 0 ? '' : 'none';
 }
 
 function toggleGatewayExpand() {

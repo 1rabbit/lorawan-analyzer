@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('toggle-owned').classList.add('active');
     document.getElementById('toggle-foreign').classList.add('active');
     ['up', 'join', 'down', 'ack'].forEach(k => document.getElementById(`toggle-${k}`).classList.add('active'));
-    applyGatewayActiveState(gateways, selectedGateway);
+    renderGatewayTabs();
     updateGatewayColumnVisibility();
     pushUrlState();
     reloadWithNewFilter();
@@ -260,7 +260,7 @@ async function loadGateways() {
 }
 
 function renderGatewayTabs() {
-  window.renderGatewayTabs(gateways, selectedGateway, 'search-input');
+  buildGatewayTabs(gateways, selectedGateway, 'search-input');
   updateGatewayColumnVisibility();
 }
 
@@ -274,7 +274,7 @@ function updateGatewayColumnVisibility() {
 function selectGateway(gatewayId) {
   selectedGateway = gatewayId;
   pushUrlState();
-  applyGatewayActiveState(gateways, selectedGateway);
+  renderGatewayTabs();
   updateGatewayColumnVisibility();
 
   // Clear and reload
