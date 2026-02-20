@@ -118,6 +118,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (initSearch) { deviceSearchEl.value = initSearch; deviceSearchText = initSearch.toLowerCase(); }
   deviceSearchEl.addEventListener('input', (e) => {
     deviceSearchText = e.target.value.toLowerCase();
+    renderGatewayTabs();
     pushUrlState();
     loadDeviceBreakdown();
   });
@@ -163,21 +164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   rssiMinEl.addEventListener('change', () => { pushUrlState(); loadDeviceBreakdown(); });
   rssiMaxEl.addEventListener('change', () => { pushUrlState(); loadDeviceBreakdown(); });
 
-  // Gateway tab: All Gateways
-  document.querySelector('.gateway-tab[data-gateway=""]').addEventListener('click', () => {
-    selectGateway(null);
-    collapseGatewaySelector();
-  });
-
-  // Gateway expand/collapse
-  document.getElementById('gateway-expand-btn').addEventListener('click', toggleGatewayExpand);
-  document.addEventListener('click', (e) => {
-    const selector = document.querySelector('.gateway-selector');
-    const btn = document.getElementById('gateway-expand-btn');
-    if (selector.classList.contains('expanded') && !selector.contains(e.target) && !btn.contains(e.target)) {
-      collapseGatewaySelector();
-    }
-  });
+  initGatewayTabs(gwId => selectGateway(gwId));
 
   // Reset all filters
   document.getElementById('reset-filters').addEventListener('click', () => {
@@ -279,58 +266,7 @@ async function loadGateways() {
 }
 
 function renderGatewayTabs() {
-  const container = document.getElementById('gateway-tabs');
-  container.innerHTML = gateways.map(gw => {
-    const label = gw.name || gw.gateway_id;
-    const title = gw.name ? `${gw.name} (${gw.gateway_id})` : gw.gateway_id;
-    return `
-    <button class="gateway-tab px-3 py-1 rounded text-xs" data-gateway="${gw.gateway_id}" title="${title}">
-      ${label}
-      <span class="text-gray-500 ml-1">${formatNumber(gw.packet_count)}</span>
-    </button>
-  `;
-  }).join('');
-
-  container.querySelectorAll('.gateway-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      selectGateway(tab.dataset.gateway);
-      collapseGatewaySelector();
-    });
-  });
-
-  applyGatewayActiveState();
-  updateExpandBtnVisibility();
-}
-
-function applyGatewayActiveState() {
-  if (selectedGateway && gateways.some(gw => gw.gateway_id === selectedGateway)) {
-    document.querySelectorAll('.gateway-tab').forEach(tab => {
-      const isActive = (tab.dataset.gateway || null) === selectedGateway;
-      tab.classList.toggle('active', isActive);
-    });
-  } else {
-    selectedGateway = null;
-    document.querySelectorAll('.gateway-tab').forEach(tab => {
-      tab.classList.toggle('active', tab.dataset.gateway === '');
-    });
-  }
-}
-
-function updateExpandBtnVisibility() {
-  const btn = document.getElementById('gateway-expand-btn');
-  btn.style.display = gateways.length > 0 ? '' : 'none';
-}
-
-function toggleGatewayExpand() {
-  const selector = document.querySelector('.gateway-selector');
-  const btn = document.getElementById('gateway-expand-btn');
-  selector.classList.toggle('expanded');
-  btn.classList.toggle('expanded');
-}
-
-function collapseGatewaySelector() {
-  document.querySelector('.gateway-selector').classList.remove('expanded');
-  document.getElementById('gateway-expand-btn').classList.remove('expanded');
+  window.renderGatewayTabs(gateways, selectedGateway, 'device-search');
 }
 
 function updateGatewayInfoPanel() {
@@ -354,7 +290,7 @@ function updateGatewayInfoPanel() {
 function selectGateway(gatewayId) {
   selectedGateway = gatewayId;
   pushUrlState();
-  applyGatewayActiveState();
+  applyGatewayActiveState(gateways, selectedGateway);
   updateGatewayInfoPanel();
 
   // Update map based on selection

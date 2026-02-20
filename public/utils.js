@@ -5,3 +5,79 @@ function formatNumber(n) {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
   return n.toString();
 }
+
+// --- Shared gateway tab rendering ---
+// Call initGatewayTabs(onSelect) once on page load, passing a page-specific callback.
+// Call renderGatewayTabs(gateways, selectedGateway, searchInputId) to (re)render.
+
+let _gwOnSelect = null;
+
+function initGatewayTabs(onSelect) {
+  _gwOnSelect = onSelect;
+
+  document.querySelector('.gateway-tab[data-gateway=""]').addEventListener('click', () => {
+    onSelect(null);
+    collapseGatewaySelector();
+  });
+
+  document.getElementById('gateway-expand-btn').addEventListener('click', toggleGatewayExpand);
+
+  document.addEventListener('click', (e) => {
+    const selector = document.querySelector('.gateway-selector');
+    const btn = document.getElementById('gateway-expand-btn');
+    if (selector && selector.classList.contains('expanded') &&
+        !selector.contains(e.target) && !btn.contains(e.target)) {
+      collapseGatewaySelector();
+    }
+  });
+}
+
+window.renderGatewayTabs = function renderGatewayTabs(gateways, selectedGateway, searchInputId) {
+  const container = document.getElementById('gateway-tabs');
+
+  // Filter tabs if search exactly matches a group name
+  const searchVal = searchInputId
+    ? (document.getElementById(searchInputId)?.value?.trim().toLowerCase() || '')
+    : '';
+  const groupMatch = searchVal
+    ? gateways.find(gw => gw.group_name && gw.group_name.toLowerCase() === searchVal)
+    : null;
+  const visible = groupMatch
+    ? gateways.filter(gw => gw.group_name && gw.group_name.toLowerCase() === searchVal)
+    : gateways;
+
+  container.innerHTML = visible.map(gw => {
+    const label = gw.name || gw.gateway_id;
+    const title = gw.name ? `${gw.name} (${gw.gateway_id})` : gw.gateway_id;
+    return `<button class="gateway-tab px-3 py-1 rounded text-xs" data-gateway="${gw.gateway_id}" title="${title}">${label}<span class="text-gray-500 ml-1">${formatNumber(gw.packet_count)}</span></button>`;
+  }).join('');
+
+  container.querySelectorAll('.gateway-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      _gwOnSelect(tab.dataset.gateway || null);
+      collapseGatewaySelector();
+    });
+  });
+
+  applyGatewayActiveState(gateways, selectedGateway);
+  document.getElementById('gateway-expand-btn').style.display = gateways.length > 0 ? '' : 'none';
+};
+
+function applyGatewayActiveState(gateways, selectedGateway) {
+  const validSelected = selectedGateway && gateways.some(gw => gw.gateway_id === selectedGateway)
+    ? selectedGateway : null;
+  document.querySelectorAll('.gateway-tab').forEach(tab => {
+    const gwId = tab.dataset.gateway || null;
+    tab.classList.toggle('active', validSelected ? gwId === validSelected : gwId === null);
+  });
+}
+
+function toggleGatewayExpand() {
+  document.querySelector('.gateway-selector').classList.toggle('expanded');
+  document.getElementById('gateway-expand-btn').classList.toggle('expanded');
+}
+
+function collapseGatewaySelector() {
+  document.querySelector('.gateway-selector').classList.remove('expanded');
+  document.getElementById('gateway-expand-btn').classList.remove('expanded');
+}

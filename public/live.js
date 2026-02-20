@@ -173,15 +173,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     reloadWithNewFilter();
   });
 
-  // Gateway tab: All Gateways
-  document.querySelector('.gateway-tab[data-gateway=""]').addEventListener('click', () => {
-    selectGateway(null);
-    collapseGatewaySelector();
-  });
+  initGatewayTabs(gwId => selectGateway(gwId));
 
   // Search input — debounced server-side filter (1000ms)
   let searchDebounceTimer = null;
   searchEl.addEventListener('input', () => {
+    renderGatewayTabs();
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(() => { pushUrlState(); reloadWithNewFilter(); }, 1000);
   });
@@ -199,20 +196,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('toggle-owned').classList.add('active');
     document.getElementById('toggle-foreign').classList.add('active');
     ['up', 'join', 'down', 'ack'].forEach(k => document.getElementById(`toggle-${k}`).classList.add('active'));
-    applyGatewayActiveState();
+    applyGatewayActiveState(gateways, selectedGateway);
     updateGatewayColumnVisibility();
     pushUrlState();
     reloadWithNewFilter();
-  });
-
-  // Gateway expand/collapse
-  document.getElementById('gateway-expand-btn').addEventListener('click', toggleGatewayExpand);
-  document.addEventListener('click', (e) => {
-    const selector = document.querySelector('.gateway-selector');
-    const btn = document.getElementById('gateway-expand-btn');
-    if (selector.classList.contains('expanded') && !selector.contains(e.target) && !btn.contains(e.target)) {
-      collapseGatewaySelector();
-    }
   });
 
   updateNavLinks();
@@ -273,42 +260,8 @@ async function loadGateways() {
 }
 
 function renderGatewayTabs() {
-  const container = document.getElementById('gateway-tabs');
-  container.innerHTML = gateways.map(gw => {
-    const label = gw.name || gw.gateway_id;
-    const title = gw.name ? `${gw.name} (${gw.gateway_id})` : gw.gateway_id;
-    return `
-    <button class="gateway-tab px-3 py-1 rounded text-xs" data-gateway="${gw.gateway_id}" title="${title}">
-      ${label}
-      <span class="text-gray-500 ml-1">${formatNumber(gw.packet_count)}</span>
-    </button>
-  `;
-  }).join('');
-
-  container.querySelectorAll('.gateway-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      selectGateway(tab.dataset.gateway);
-      collapseGatewaySelector();
-    });
-  });
-
-  applyGatewayActiveState();
+  window.renderGatewayTabs(gateways, selectedGateway, 'search-input');
   updateGatewayColumnVisibility();
-  updateExpandBtnVisibility();
-}
-
-function applyGatewayActiveState() {
-  if (selectedGateway && gateways.some(gw => gw.gateway_id === selectedGateway)) {
-    document.querySelectorAll('.gateway-tab').forEach(tab => {
-      const isActive = (tab.dataset.gateway || null) === selectedGateway;
-      tab.classList.toggle('active', isActive);
-    });
-  } else {
-    selectedGateway = null;
-    document.querySelectorAll('.gateway-tab').forEach(tab => {
-      tab.classList.toggle('active', tab.dataset.gateway === '');
-    });
-  }
 }
 
 function updateGatewayColumnVisibility() {
@@ -318,27 +271,10 @@ function updateGatewayColumnVisibility() {
   });
 }
 
-function updateExpandBtnVisibility() {
-  const btn = document.getElementById('gateway-expand-btn');
-  btn.style.display = gateways.length > 0 ? '' : 'none';
-}
-
-function toggleGatewayExpand() {
-  const selector = document.querySelector('.gateway-selector');
-  const btn = document.getElementById('gateway-expand-btn');
-  selector.classList.toggle('expanded');
-  btn.classList.toggle('expanded');
-}
-
-function collapseGatewaySelector() {
-  document.querySelector('.gateway-selector').classList.remove('expanded');
-  document.getElementById('gateway-expand-btn').classList.remove('expanded');
-}
-
 function selectGateway(gatewayId) {
   selectedGateway = gatewayId;
   pushUrlState();
-  applyGatewayActiveState();
+  applyGatewayActiveState(gateways, selectedGateway);
   updateGatewayColumnVisibility();
 
   // Clear and reload
