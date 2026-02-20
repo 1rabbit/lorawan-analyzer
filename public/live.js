@@ -18,60 +18,61 @@ let filter = { showOwned: true, showForeign: true, prefixes: [] };
 let typeFilter = { up: true, join: true, down: true, ack: true };
 let operatorColors = {};
 
-// Load filter state from localStorage
-function loadFilterState() {
-  try {
-    const saved = localStorage.getItem('lorawanFilterState');
-    if (saved) {
-      const state = JSON.parse(saved);
-      filter.showOwned = state.showOwned ?? true;
-      filter.showForeign = state.showForeign ?? true;
-    }
-    const savedTypes = localStorage.getItem('lorawanTypeFilter');
-    if (savedTypes) {
-      const types = JSON.parse(savedTypes);
-      typeFilter.up = types.up ?? true;
-      typeFilter.join = types.join ?? true;
-      typeFilter.down = types.down ?? true;
-      typeFilter.ack = types.ack ?? true;
-    }
-    const savedGateway = localStorage.getItem('lorawanSelectedGateway');
-    if (savedGateway) {
-      selectedGateway = savedGateway === 'null' ? null : savedGateway;
-    }
-  } catch (e) {
-    console.error('Failed to load filter state:', e);
-  }
+// --- URL state ---
+function readUrlState() {
+  const p = new URLSearchParams(location.search);
+  selectedGateway = p.get('gw') || null;
+  typeFilter.up   = p.get('up')   !== '0';
+  typeFilter.join = p.get('join') !== '0';
+  typeFilter.down = p.get('down') !== '0';
+  typeFilter.ack  = p.get('ack')  !== '0';
+  filter.showOwned   = p.get('owned')   !== '0';
+  filter.showForeign = p.get('foreign') !== '0';
+  const search = p.get('search') || '';
+  const rssiMin = p.get('rssi_min');
+  const rssiMax = p.get('rssi_max');
+  return { search, rssiMin, rssiMax };
 }
 
-// Save filter state to localStorage
-function saveFilterState() {
-  try {
-    localStorage.setItem('lorawanFilterState', JSON.stringify({
-      showOwned: filter.showOwned,
-      showForeign: filter.showForeign
-    }));
-    localStorage.setItem('lorawanTypeFilter', JSON.stringify(typeFilter));
-  } catch (e) {
-    console.error('Failed to save filter state:', e);
-  }
+function pushUrlState() {
+  const p = new URLSearchParams();
+  if (selectedGateway) p.set('gw', selectedGateway);
+  if (!typeFilter.up)   p.set('up',   '0');
+  if (!typeFilter.join) p.set('join', '0');
+  if (!typeFilter.down) p.set('down', '0');
+  if (!typeFilter.ack)  p.set('ack',  '0');
+  if (!filter.showOwned)   p.set('owned',   '0');
+  if (!filter.showForeign) p.set('foreign', '0');
+  const searchVal = document.getElementById('search-input')?.value?.trim();
+  if (searchVal) p.set('search', searchVal);
+  const rssiLo = parseInt(document.getElementById('rssi-min')?.value, 10);
+  const rssiHi = parseInt(document.getElementById('rssi-max')?.value, 10);
+  if (rssiLo > -140) p.set('rssi_min', rssiLo);
+  if (rssiHi < -30)  p.set('rssi_max', rssiHi);
+  const qs = p.toString();
+  history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
+  updateNavLinks();
 }
 
-function saveSelectedGateway() {
-  try {
-    localStorage.setItem('lorawanSelectedGateway', selectedGateway === null ? 'null' : selectedGateway);
-  } catch (e) {
-    console.error('Failed to save gateway:', e);
-  }
+// Keep nav links in sync so cross-page navigation carries owned/foreign
+function updateNavLinks() {
+  const p = new URLSearchParams();
+  if (!filter.showOwned)   p.set('owned',   '0');
+  if (!filter.showForeign) p.set('foreign', '0');
+  const qs = p.toString();
+  document.querySelectorAll('a[href*="index"], a[href="./"], a[href="/"]').forEach(a => {
+    const base = a.href.split('?')[0];
+    a.href = qs ? `${base}?${qs}` : base;
+  });
 }
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
-  loadFilterState();
+  const { search: initSearch, rssiMin: initRssiMin, rssiMax: initRssiMax } = readUrlState();
 
   await Promise.all([loadMyDevicesConfig(), loadOperatorColors()]);
 
-  // Apply saved filter state to UI
+  // Apply URL state to UI
   document.getElementById('toggle-owned').classList.toggle('active', filter.showOwned);
   document.getElementById('toggle-foreign').classList.toggle('active', filter.showForeign);
   document.getElementById('toggle-up').classList.toggle('active', typeFilter.up);
@@ -79,20 +80,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('toggle-down').classList.toggle('active', typeFilter.down);
   document.getElementById('toggle-ack').classList.toggle('active', typeFilter.ack);
 
+  const searchEl = document.getElementById('search-input');
+  if (initSearch) searchEl.value = initSearch;
+
   // RSSI range slider
   const rssiMinEl = document.getElementById('rssi-min');
   const rssiMaxEl = document.getElementById('rssi-max');
   const rssiRangeLabel = document.getElementById('rssi-range-label');
 
-  // Restore saved RSSI filter
-  try {
-    const saved = localStorage.getItem('lorawanRssiFilter');
-    if (saved) {
-      const { min, max } = JSON.parse(saved);
-      rssiMinEl.value = min;
-      rssiMaxEl.value = max;
-    }
-  } catch (e) {}
+  if (initRssiMin) rssiMinEl.value = initRssiMin;
+  if (initRssiMax) rssiMaxEl.value = initRssiMax;
 
   function updateRssiLabel() {
     const lo = parseInt(rssiMinEl.value, 10);
@@ -108,15 +105,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function saveRssiFilter() {
-    try {
-      localStorage.setItem('lorawanRssiFilter', JSON.stringify({
-        min: parseInt(rssiMinEl.value, 10),
-        max: parseInt(rssiMaxEl.value, 10)
-      }));
-    } catch (e) {}
-  }
-
   updateRssiLabel();
 
   rssiMinEl.addEventListener('input', () => {
@@ -124,17 +112,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       rssiMinEl.value = rssiMaxEl.value;
     }
     updateRssiLabel();
-    saveRssiFilter();
   });
   rssiMaxEl.addEventListener('input', () => {
     if (parseInt(rssiMaxEl.value, 10) < parseInt(rssiMinEl.value, 10)) {
       rssiMaxEl.value = rssiMinEl.value;
     }
     updateRssiLabel();
-    saveRssiFilter();
   });
-  rssiMinEl.addEventListener('change', () => reloadWithNewFilter());
-  rssiMaxEl.addEventListener('change', () => reloadWithNewFilter());
+  rssiMinEl.addEventListener('change', () => { pushUrlState(); reloadWithNewFilter(); });
+  rssiMaxEl.addEventListener('change', () => { pushUrlState(); reloadWithNewFilter(); });
 
   // Init shared packet feed — filter bar is in the page header
   initPacketFeed('live-feed-container', {
@@ -144,7 +130,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     clickable: true,
     noFilterBar: true,
     countEl: document.getElementById('packet-count'),
-    searchEl: document.getElementById('search-input'),
     isMyDevice,
     getOperatorStyle,
   });
@@ -161,7 +146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById(`toggle-${key}`).addEventListener('click', (e) => {
       typeFilter[key] = !typeFilter[key];
       e.target.classList.toggle('active', typeFilter[key]);
-      saveFilterState();
+      pushUrlState();
       reloadWithNewFilter();
     });
   });
@@ -170,14 +155,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('toggle-owned').addEventListener('click', (e) => {
     filter.showOwned = !filter.showOwned;
     e.target.classList.toggle('active', filter.showOwned);
-    saveFilterState();
+    pushUrlState();
     reloadWithNewFilter();
   });
 
   document.getElementById('toggle-foreign').addEventListener('click', (e) => {
     filter.showForeign = !filter.showForeign;
     e.target.classList.toggle('active', filter.showForeign);
-    saveFilterState();
+    pushUrlState();
     reloadWithNewFilter();
   });
 
@@ -189,9 +174,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Search input — debounced server-side filter (1000ms)
   let searchDebounceTimer = null;
-  document.getElementById('search-input').addEventListener('input', () => {
+  searchEl.addEventListener('input', () => {
     clearTimeout(searchDebounceTimer);
-    searchDebounceTimer = setTimeout(() => reloadWithNewFilter(), 1000);
+    searchDebounceTimer = setTimeout(() => { pushUrlState(); reloadWithNewFilter(); }, 1000);
   });
 
   // Gateway expand/collapse
@@ -203,6 +188,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       collapseGatewaySelector();
     }
   });
+
+  updateNavLinks();
 });
 
 // API Helper
@@ -242,13 +229,6 @@ function isMyDevice(devAddr) {
     const mask = bits === 0 ? 0 : (0xFFFFFFFF << (32 - bits)) >>> 0;
     if ((addrNum & mask) === (prefix & mask)) return true;
   }
-  return false;
-}
-
-function shouldShowDevice(devAddr) {
-  const isOwned = isMyDevice(devAddr);
-  if (isOwned && filter.showOwned) return true;
-  if (!isOwned && filter.showForeign) return true;
   return false;
 }
 
@@ -331,7 +311,7 @@ function collapseGatewaySelector() {
 
 function selectGateway(gatewayId) {
   selectedGateway = gatewayId;
-  saveSelectedGateway();
+  pushUrlState();
   applyGatewayActiveState();
   updateGatewayColumnVisibility();
 

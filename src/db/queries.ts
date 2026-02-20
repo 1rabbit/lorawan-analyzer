@@ -1234,9 +1234,32 @@ export async function getRecentPackets(
     packetTypeFilter = `AND packet_type IN (${types})`;
   }
 
-  // Build gateway metadata map from SQLite (name, alias, group_name for search)
+  // Build gateway metadata map from SQLite
   const gwRows = getSQLite().prepare('SELECT gateway_id, name, alias, group_name FROM gateways').all() as Array<{ gateway_id: string; name: string | null; alias: string | null; group_name: string | null }>;
   const gatewayMeta = new Map(gwRows.map(g => [g.gateway_id, g]));
+
+  // Build search filter — resolve gateway metadata matches in SQLite first,
+  // then push everything into a single ClickHouse WHERE clause so LIMIT applies after filtering
+  let searchFilter = '';
+  if (search) {
+    const needle = search.toLowerCase();
+    // ClickHouse fields searchable directly
+    const chConditions = [
+      `positionCaseInsensitive(gateway_id, {search:String}) > 0`,
+      `positionCaseInsensitive(operator, {search:String}) > 0`,
+      `positionCaseInsensitive(dev_addr, {search:String}) > 0`,
+      `positionCaseInsensitive(dev_eui, {search:String}) > 0`,
+      `positionCaseInsensitive(join_eui, {search:String}) > 0`,
+    ];
+    // Gateway IDs whose SQLite metadata (name/alias/group_name) match
+    const matchedGwIds = gwRows
+      .filter(g => [g.name, g.alias, g.group_name].some(v => v && v.toLowerCase().includes(needle)))
+      .map(g => `'${g.gateway_id.replace(/'/g, "''")}'`);
+    if (matchedGwIds.length > 0) {
+      chConditions.push(`gateway_id IN (${matchedGwIds.join(',')})`);
+    }
+    searchFilter = `AND (${chConditions.join(' OR ')})`;
+  }
 
   const result = await client.query({
     query: `
@@ -1266,10 +1289,11 @@ export async function getRecentPackets(
         ${rssiFilter}
         ${deviceAddrFilter}
         ${packetTypeFilter}
+        ${searchFilter}
       ORDER BY p.timestamp DESC
       LIMIT {limit:UInt32}
     `,
-    query_params: { limit, gatewayId, devAddr, hours, rssiMin, rssiMax },
+    query_params: { limit, gatewayId, devAddr, hours, rssiMin, rssiMax, search: search ?? '' },
     format: 'JSONEachRow',
   });
 
@@ -1281,26 +1305,8 @@ export async function getRecentPackets(
     confirmed: boolean | null; airtime_us: number;
   };
   const packets = await result.json<PacketRow>();
-  const mapped = packets.map(p => {
+  return packets.map(p => {
     const gw = gatewayMeta.get(p.gateway_id);
     return { ...p, gateway_name: gw?.name ?? null };
-  });
-
-  if (!search) return mapped;
-
-  const needle = search.toLowerCase();
-  return mapped.filter(p => {
-    const gw = gatewayMeta.get(p.gateway_id);
-    const haystack = [
-      p.gateway_id,
-      gw?.name,
-      gw?.alias,
-      gw?.group_name,
-      p.operator,
-      p.dev_addr,
-      p.dev_eui,
-      p.join_eui,
-    ].filter(Boolean).join(' ').toLowerCase();
-    return haystack.includes(needle);
   });
 }

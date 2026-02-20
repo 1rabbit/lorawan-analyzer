@@ -28,7 +28,6 @@
     hideTypes: [],         // type keys to hide from filter bar (e.g. ['join', 'ack'])
     noFilterBar: false,    // skip generating filter bar (page provides its own)
     countEl: null,         // external element for packet count
-    searchEl: null,        // external input element for search
     storagePrefix: '',     // prefix for localStorage keys
   };
 
@@ -356,13 +355,6 @@
     // Filter bar (or wire up external elements)
     if (opts.noFilterBar) {
       if (opts.countEl) countEl = opts.countEl;
-      if (opts.searchEl) {
-        searchInput = opts.searchEl;
-        searchInput.addEventListener('input', (e) => {
-          searchText = e.target.value.toLowerCase();
-          renderFeed();
-        });
-      }
     } else {
       const filterBar = buildFilterBar();
       filterBar.className += ' bg-white/5 border-b border-white/10 flex-shrink-0';

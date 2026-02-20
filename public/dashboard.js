@@ -11,54 +11,43 @@ let deviceSearchText = '';
 let rssiFilterMin = -200;
 let rssiFilterMax = 0;
 
-// Load filter state from localStorage
-function loadFilterState() {
-  try {
-    const saved = localStorage.getItem('lorawanFilterState');
-    if (saved) {
-      const state = JSON.parse(saved);
-      filter.showOwned = state.showOwned ?? true;
-      filter.showForeign = state.showForeign ?? true;
-    }
-    const savedGateway = localStorage.getItem('lorawanSelectedGateway');
-    if (savedGateway) {
-      selectedGateway = savedGateway === 'null' ? null : savedGateway;
-    }
-    const savedHours = localStorage.getItem('lorawanSelectedHours');
-    if (savedHours) {
-      selectedHours = parseInt(savedHours, 10) || 24;
-    }
-  } catch (e) {
-    console.error('Failed to load filter state:', e);
-  }
+// --- URL state ---
+function readUrlState() {
+  const p = new URLSearchParams(location.search);
+  selectedGateway = p.get('gw') || null;
+  selectedHours   = parseInt(p.get('hours') || '24', 10) || 24;
+  filter.showOwned   = p.get('owned')   !== '0';
+  filter.showForeign = p.get('foreign') !== '0';
+  const rssiMin = p.get('rssi_min');
+  const rssiMax = p.get('rssi_max');
+  return { rssiMin, rssiMax };
 }
 
-function saveSelectedHours() {
-  try {
-    localStorage.setItem('lorawanSelectedHours', selectedHours.toString());
-  } catch (e) {
-    console.error('Failed to save hours:', e);
-  }
+function pushUrlState() {
+  const p = new URLSearchParams();
+  if (selectedGateway) p.set('gw', selectedGateway);
+  if (selectedHours !== 24) p.set('hours', selectedHours);
+  if (!filter.showOwned)   p.set('owned',   '0');
+  if (!filter.showForeign) p.set('foreign', '0');
+  const rssiLo = parseInt(document.getElementById('rssi-min')?.value, 10);
+  const rssiHi = parseInt(document.getElementById('rssi-max')?.value, 10);
+  if (rssiLo > -140) p.set('rssi_min', rssiLo);
+  if (rssiHi < -30)  p.set('rssi_max', rssiHi);
+  const qs = p.toString();
+  history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
+  updateNavLinks();
 }
 
-// Save filter state to localStorage
-function saveFilterState() {
-  try {
-    localStorage.setItem('lorawanFilterState', JSON.stringify({
-      showOwned: filter.showOwned,
-      showForeign: filter.showForeign
-    }));
-  } catch (e) {
-    console.error('Failed to save filter state:', e);
-  }
-}
-
-function saveSelectedGateway() {
-  try {
-    localStorage.setItem('lorawanSelectedGateway', selectedGateway === null ? 'null' : selectedGateway);
-  } catch (e) {
-    console.error('Failed to save gateway:', e);
-  }
+// Keep nav links in sync so cross-page navigation carries owned/foreign
+function updateNavLinks() {
+  const p = new URLSearchParams();
+  if (!filter.showOwned)   p.set('owned',   '0');
+  if (!filter.showForeign) p.set('foreign', '0');
+  const qs = p.toString();
+  document.querySelectorAll('a[href*="live"]').forEach(a => {
+    const base = a.href.split('?')[0];
+    a.href = qs ? `${base}?${qs}` : base;
+  });
 }
 
 // Charts
@@ -69,13 +58,13 @@ let sfChart = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
-  loadFilterState();
+  const { rssiMin: initRssiMin, rssiMax: initRssiMax } = readUrlState();
 
-  // Apply saved filter state to UI before loading data
+  // Apply URL state to UI before loading data
   document.getElementById('toggle-owned').classList.toggle('active', filter.showOwned);
   document.getElementById('toggle-foreign').classList.toggle('active', filter.showForeign);
 
-  // Apply saved time range to UI
+  // Apply time range to UI
   document.querySelectorAll('.time-btn').forEach(btn => {
     const hours = parseInt(btn.dataset.hours, 10);
     btn.classList.toggle('active', hours === selectedHours);
@@ -91,9 +80,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('.time-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       selectedHours = parseInt(btn.dataset.hours, 10);
-      saveSelectedHours();
       document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      pushUrlState();
       loadAllData();
     });
   });
@@ -102,14 +91,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('toggle-owned').addEventListener('click', (e) => {
     filter.showOwned = !filter.showOwned;
     e.target.classList.toggle('active', filter.showOwned);
-    saveFilterState();
+    pushUrlState();
     loadAllData();
   });
 
   document.getElementById('toggle-foreign').addEventListener('click', (e) => {
     filter.showForeign = !filter.showForeign;
     e.target.classList.toggle('active', filter.showForeign);
-    saveFilterState();
+    pushUrlState();
     loadAllData();
   });
 
@@ -124,17 +113,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const rssiMaxEl = document.getElementById('rssi-max');
   const rssiRangeLabel = document.getElementById('rssi-range-label');
 
-  // Restore saved RSSI filter
-  try {
-    const saved = localStorage.getItem('lorawanRssiFilter');
-    if (saved) {
-      const { min, max } = JSON.parse(saved);
-      rssiMinEl.value = min;
-      rssiMaxEl.value = max;
-      rssiFilterMin = min;
-      rssiFilterMax = max;
-    }
-  } catch (e) {}
+  if (initRssiMin) { rssiMinEl.value = initRssiMin; rssiFilterMin = parseInt(initRssiMin, 10); }
+  if (initRssiMax) { rssiMaxEl.value = initRssiMax; rssiFilterMax = parseInt(initRssiMax, 10); }
 
   function updateRssiLabel() {
     const lo = parseInt(rssiMinEl.value, 10);
@@ -150,15 +130,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function saveRssiFilter() {
-    try {
-      localStorage.setItem('lorawanRssiFilter', JSON.stringify({
-        min: parseInt(rssiMinEl.value, 10),
-        max: parseInt(rssiMaxEl.value, 10)
-      }));
-    } catch (e) {}
-  }
-
   updateRssiLabel();
 
   rssiMinEl.addEventListener('input', () => {
@@ -167,7 +138,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     rssiFilterMin = parseInt(rssiMinEl.value, 10);
     updateRssiLabel();
-    saveRssiFilter();
   });
   rssiMaxEl.addEventListener('input', () => {
     if (parseInt(rssiMaxEl.value, 10) < parseInt(rssiMinEl.value, 10)) {
@@ -175,10 +145,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     rssiFilterMax = parseInt(rssiMaxEl.value, 10);
     updateRssiLabel();
-    saveRssiFilter();
   });
-  rssiMinEl.addEventListener('change', () => loadDeviceBreakdown());
-  rssiMaxEl.addEventListener('change', () => loadDeviceBreakdown());
+  rssiMinEl.addEventListener('change', () => { pushUrlState(); loadDeviceBreakdown(); });
+  rssiMaxEl.addEventListener('change', () => { pushUrlState(); loadDeviceBreakdown(); });
 
   // Gateway tab: All Gateways
   document.querySelector('.gateway-tab[data-gateway=""]').addEventListener('click', () => {
@@ -198,6 +167,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Auto-refresh every 30 seconds
   setInterval(loadAllData, 30000);
+
+  updateNavLinks();
 });
 
 // API Helper
@@ -349,7 +320,7 @@ function updateGatewayInfoPanel() {
 
 function selectGateway(gatewayId) {
   selectedGateway = gatewayId;
-  saveSelectedGateway();
+  pushUrlState();
   applyGatewayActiveState();
   updateGatewayInfoPanel();
 
