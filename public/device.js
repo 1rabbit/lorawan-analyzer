@@ -67,14 +67,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function updateNavLinks() {
-  // Build shared params to carry back (everything except addr/gateway which are device-specific)
-  const p = new URLSearchParams();
-  if (selectedHours !== 24) p.set('hours', selectedHours);
-  // Carry through any other shared params that were present when we arrived
-  ['gw', 'owned', 'foreign', 'rssi_min', 'rssi_max', 'search', 'up', 'join', 'down', 'ack'].forEach(key => {
-    const val = params.get(key);
-    if (val !== null) p.set(key, val);
-  });
+  // Start from all params we arrived with, override hours, drop device-specific ones
+  const p = new URLSearchParams(params);
+  p.delete('addr');
+  p.delete('gateway');
+  if (selectedHours !== 24) p.set('hours', selectedHours); else p.delete('hours');
   const qs = p.toString();
   document.querySelectorAll('nav a, a[href="./"]').forEach(a => {
     const base = a.href.split('?')[0];

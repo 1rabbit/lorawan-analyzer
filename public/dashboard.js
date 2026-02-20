@@ -25,36 +25,31 @@ function readUrlState() {
   };
 }
 
-function pushUrlState() {
-  const p = new URLSearchParams();
-  if (selectedGateway) p.set('gw', selectedGateway);
-  if (selectedHours !== 24) p.set('hours', selectedHours);
-  if (!filter.showOwned)   p.set('owned',   '0');
-  if (!filter.showForeign) p.set('foreign', '0');
+function buildParams() {
+  // Start from all current URL params, then apply this page's state
+  const p = new URLSearchParams(location.search);
+  if (selectedGateway) p.set('gw', selectedGateway); else p.delete('gw');
+  if (selectedHours !== 24) p.set('hours', selectedHours); else p.delete('hours');
+  if (!filter.showOwned)   p.set('owned',   '0'); else p.delete('owned');
+  if (!filter.showForeign) p.set('foreign', '0'); else p.delete('foreign');
   const rssiLo = parseInt(document.getElementById('rssi-min')?.value, 10);
   const rssiHi = parseInt(document.getElementById('rssi-max')?.value, 10);
-  if (rssiLo > -140) p.set('rssi_min', rssiLo);
-  if (rssiHi < -30)  p.set('rssi_max', rssiHi);
+  if (rssiLo > -140) p.set('rssi_min', rssiLo); else p.delete('rssi_min');
+  if (rssiHi < -30)  p.set('rssi_max', rssiHi); else p.delete('rssi_max');
   const searchVal = document.getElementById('device-search')?.value?.trim();
-  if (searchVal) p.set('search', searchVal);
+  if (searchVal) p.set('search', searchVal); else p.delete('search');
+  return p;
+}
+
+function pushUrlState() {
+  const p = buildParams();
   const qs = p.toString();
   history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
   updateNavLinks();
 }
 
-// Keep all URL params in sync on nav links so cross-page navigation preserves state
 function updateNavLinks() {
-  const p = new URLSearchParams();
-  if (selectedGateway) p.set('gw', selectedGateway);
-  if (selectedHours !== 24) p.set('hours', selectedHours);
-  if (!filter.showOwned)   p.set('owned',   '0');
-  if (!filter.showForeign) p.set('foreign', '0');
-  const rssiLo = parseInt(document.getElementById('rssi-min')?.value, 10);
-  const rssiHi = parseInt(document.getElementById('rssi-max')?.value, 10);
-  if (rssiLo > -140) p.set('rssi_min', rssiLo);
-  if (rssiHi < -30)  p.set('rssi_max', rssiHi);
-  const searchVal = document.getElementById('device-search')?.value?.trim();
-  if (searchVal) p.set('search', searchVal);
+  const p = buildParams();
   const qs = p.toString();
   document.querySelectorAll('nav a').forEach(a => {
     const base = a.href.split('?')[0];
