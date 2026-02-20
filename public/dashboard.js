@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await Promise.all([loadMyDevicesConfig(), loadOperatorColors()]);
   initGatewayMap();
-  loadGateways();
+  await loadGateways();
   loadAllData();
   initCharts();
 

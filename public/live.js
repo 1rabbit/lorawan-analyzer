@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Flush buffered packets when user scrolls back to top
   onPacketFeedResume(flushPendingEntries);
 
-  loadGateways();
+  await loadGateways();
   loadRecentPackets(selectedGateway);
   connectWebSocket(selectedGateway);
 

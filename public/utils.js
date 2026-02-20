@@ -46,25 +46,22 @@ function initGatewayTabs(onSelect, onGroupChange) {
 function buildGatewayTabs(gateways, selectedGateway, searchInputId, selectedGroup) {
   const container = document.getElementById('gateway-tabs');
 
-  // Populate group dropdown
+  // Populate group dropdown (preserve current value if selectedGroup not specified)
   const groupSelect = document.getElementById('group-filter');
   if (groupSelect) {
     const groups = [...new Set(gateways.map(gw => gw.group_name).filter(Boolean))].sort();
     const hasNoGroup = gateways.some(gw => !gw.group_name);
-    const current = groupSelect.value;
     groupSelect.innerHTML = '<option value="">All Groups</option>' +
       groups.map(g => `<option value="${g}">${g}</option>`).join('') +
       (hasNoGroup ? '<option value="__none__">No Group</option>' : '');
-    // Restore selection (prefer selectedGroup arg, else keep current)
-    groupSelect.value = selectedGroup !== undefined ? (selectedGroup || '') : current;
+    groupSelect.value = selectedGroup || '';
   }
 
   // Filter tabs by selected group
-  const activeGroup = selectedGroup !== undefined ? selectedGroup : (groupSelect?.value || null);
-  const visible = activeGroup === '__none__'
+  const visible = selectedGroup === '__none__'
     ? gateways.filter(gw => !gw.group_name)
-    : activeGroup
-      ? gateways.filter(gw => gw.group_name === activeGroup)
+    : selectedGroup
+      ? gateways.filter(gw => gw.group_name === selectedGroup)
       : gateways;
 
   container.innerHTML = visible.map(gw => {
