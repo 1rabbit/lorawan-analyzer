@@ -21,6 +21,14 @@ function initGatewayTabs(onSelect) {
 
   document.getElementById('gateway-expand-btn').addEventListener('click', toggleGatewayExpand);
 
+  const scrollEl = document.querySelector('.gateway-tabs-scroll');
+  document.getElementById('gateway-scroll-left').addEventListener('click', () => {
+    scrollEl.scrollBy({ left: -200, behavior: 'smooth' });
+  });
+  document.getElementById('gateway-scroll-right').addEventListener('click', () => {
+    scrollEl.scrollBy({ left: 200, behavior: 'smooth' });
+  });
+
   document.addEventListener('click', (e) => {
     const selector = document.querySelector('.gateway-selector');
     const btn = document.getElementById('gateway-expand-btn');
@@ -70,11 +78,15 @@ function buildGatewayTabs(gateways, selectedGateway, searchInputId) {
 }
 
 function toggleGatewayExpand() {
-  document.querySelector('.gateway-selector').classList.toggle('expanded');
+  const expanded = document.querySelector('.gateway-selector').classList.toggle('expanded');
   document.getElementById('gateway-expand-btn').classList.toggle('expanded');
+  document.getElementById('gateway-scroll-left').style.display  = expanded ? 'none' : '';
+  document.getElementById('gateway-scroll-right').style.display = expanded ? 'none' : '';
 }
 
 function collapseGatewaySelector() {
   document.querySelector('.gateway-selector').classList.remove('expanded');
   document.getElementById('gateway-expand-btn').classList.remove('expanded');
+  document.getElementById('gateway-scroll-left').style.display  = '';
+  document.getElementById('gateway-scroll-right').style.display = '';
 }

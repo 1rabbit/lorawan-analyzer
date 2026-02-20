@@ -94,37 +94,76 @@ body {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Gateway selector: collapsed = single row, horizontally scrollable */
+/* Gateway selector */
 .gateway-selector {
   flex-wrap: nowrap;
-  overflow-x: auto;
-  scrollbar-width: none; /* Firefox */
+  overflow: hidden;
 }
 
-.gateway-selector::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
+.gateway-tabs-scroll {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.gateway-tabs-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 #gateway-tabs {
-  overflow: visible;
   flex-wrap: nowrap;
-  min-width: 0;
+  display: flex;
+  gap: 4px;
+}
+
+.gateway-scroll-controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(24, 14, 10, 0.9);
+  padding-left: 4px;
+}
+
+/* Scroll buttons */
+.gateway-scroll-btn {
+  color: rgba(255, 255, 255, 0.4);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+.gateway-scroll-btn:hover {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* Expanded: wrap onto multiple lines */
 .gateway-selector.expanded {
   flex-wrap: wrap;
-  overflow-x: hidden;
+}
+
+.gateway-selector.expanded .gateway-tabs-scroll {
+  width: 100%;
+  flex-wrap: wrap;
+  overflow: visible;
+  max-height: 50vh;
   overflow-y: auto;
-  max-height: 60vh;
 }
 
 .gateway-selector.expanded #gateway-tabs {
   flex-wrap: wrap;
 }
 
-.gateway-selector.expanded .gateway-expand-btn {
-  position: static;
+.gateway-selector.expanded .gateway-scroll-controls {
   background: transparent;
   align-self: flex-start;
 }
@@ -132,15 +171,13 @@ body {
 /* Expand button */
 .gateway-expand-btn {
   color: rgba(255, 255, 255, 0.5);
-  background: rgba(24, 14, 10, 0.9);
+  background: transparent;
   border: none;
   cursor: pointer;
   flex-shrink: 0;
   transition: all 0.15s;
   display: flex;
   align-items: center;
-  position: sticky;
-  right: 0;
 }
 
 .gateway-expand-btn:hover {
