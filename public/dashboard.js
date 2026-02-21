@@ -203,8 +203,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadAllData();
   });
 
-  // Auto-refresh every 30 seconds
-  setInterval(loadAllData, 30000);
+  // Auto-refresh every 2 minutes
+  setInterval(loadAllData, 120000);
 
   updateNavLinks();
 });

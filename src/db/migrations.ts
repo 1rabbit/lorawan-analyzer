@@ -68,5 +68,153 @@ export async function runMigrations(): Promise<void> {
 
   // Note: gateways, custom_operators, and hide_rules tables are now in SQLite
 
+  // Create materialized view target tables
+  await client.command({
+    query: `
+      CREATE TABLE IF NOT EXISTS packets_hourly (
+        hour             DateTime,
+        gateway_id       LowCardinality(String),
+        operator         LowCardinality(String),
+        packet_type      LowCardinality(String),
+        packet_count     AggregateFunction(count),
+        airtime_us_sum   AggregateFunction(sum, UInt32),
+        dev_addr_set     AggregateFunction(uniq, Nullable(String))
+      )
+      ENGINE = AggregatingMergeTree()
+      PARTITION BY toYYYYMM(hour)
+      ORDER BY (hour, gateway_id, operator, packet_type)
+      TTL hour + INTERVAL 7 DAY
+    `,
+  });
+  console.log('  Created packets_hourly table');
+
+  await client.command({
+    query: `
+      CREATE TABLE IF NOT EXISTS packets_channel_sf_hourly (
+        hour             DateTime,
+        gateway_id       LowCardinality(String),
+        frequency        UInt32,
+        spreading_factor UInt8,
+        packet_count     AggregateFunction(count),
+        airtime_us_sum   AggregateFunction(sum, UInt32)
+      )
+      ENGINE = AggregatingMergeTree()
+      PARTITION BY toYYYYMM(hour)
+      ORDER BY (hour, gateway_id, frequency, spreading_factor)
+      TTL hour + INTERVAL 7 DAY
+    `,
+  });
+  console.log('  Created packets_channel_sf_hourly table');
+
+  // Create materialized views (only fires on new inserts going forward)
+  let hourlyMvCreated = false;
+  try {
+    await client.command({
+      query: `
+        CREATE MATERIALIZED VIEW IF NOT EXISTS packets_hourly_mv
+        TO packets_hourly AS
+        SELECT
+          toStartOfHour(timestamp) as hour,
+          gateway_id,
+          operator,
+          packet_type,
+          countState() as packet_count,
+          sumState(airtime_us) as airtime_us_sum,
+          uniqState(dev_addr) as dev_addr_set
+        FROM packets
+        GROUP BY hour, gateway_id, operator, packet_type
+      `,
+    });
+    console.log('  Created packets_hourly_mv materialized view');
+    hourlyMvCreated = true;
+  } catch (err) {
+    console.warn('  Could not create packets_hourly_mv:', err);
+  }
+
+  let channelMvCreated = false;
+  try {
+    await client.command({
+      query: `
+        CREATE MATERIALIZED VIEW IF NOT EXISTS packets_channel_sf_hourly_mv
+        TO packets_channel_sf_hourly AS
+        SELECT
+          toStartOfHour(timestamp) as hour,
+          gateway_id,
+          frequency,
+          coalesce(spreading_factor, 0) as spreading_factor,
+          countState() as packet_count,
+          sumState(airtime_us) as airtime_us_sum
+        FROM packets
+        GROUP BY hour, gateway_id, frequency, spreading_factor
+      `,
+    });
+    console.log('  Created packets_channel_sf_hourly_mv materialized view');
+    channelMvCreated = true;
+  } catch (err) {
+    console.warn('  Could not create packets_channel_sf_hourly_mv:', err);
+  }
+
+  // Backfill historical data into MV target tables if they are empty
+  if (hourlyMvCreated) {
+    try {
+      const countResult = await client.query({
+        query: `SELECT count() as c FROM packets_hourly`,
+        format: 'JSONEachRow',
+      });
+      const countRows = await countResult.json<{ c: number }>();
+      if ((countRows[0]?.c ?? 0) === 0) {
+        console.log('  Backfilling packets_hourly from raw packets...');
+        await client.command({
+          query: `
+            INSERT INTO packets_hourly
+            SELECT
+              toStartOfHour(timestamp) as hour,
+              gateway_id,
+              operator,
+              packet_type,
+              countState() as packet_count,
+              sumState(airtime_us) as airtime_us_sum,
+              uniqState(dev_addr) as dev_addr_set
+            FROM packets
+            GROUP BY hour, gateway_id, operator, packet_type
+          `,
+        });
+        console.log('  Backfill of packets_hourly complete');
+      }
+    } catch (err) {
+      console.warn('  packets_hourly backfill failed (non-fatal):', err);
+    }
+  }
+
+  if (channelMvCreated) {
+    try {
+      const countResult = await client.query({
+        query: `SELECT count() as c FROM packets_channel_sf_hourly`,
+        format: 'JSONEachRow',
+      });
+      const countRows = await countResult.json<{ c: number }>();
+      if ((countRows[0]?.c ?? 0) === 0) {
+        console.log('  Backfilling packets_channel_sf_hourly from raw packets...');
+        await client.command({
+          query: `
+            INSERT INTO packets_channel_sf_hourly
+            SELECT
+              toStartOfHour(timestamp) as hour,
+              gateway_id,
+              frequency,
+              coalesce(spreading_factor, 0) as spreading_factor,
+              countState() as packet_count,
+              sumState(airtime_us) as airtime_us_sum
+            FROM packets
+            GROUP BY hour, gateway_id, frequency, spreading_factor
+          `,
+        });
+        console.log('  Backfill of packets_channel_sf_hourly complete');
+      }
+    } catch (err) {
+      console.warn('  packets_channel_sf_hourly backfill failed (non-fatal):', err);
+    }
+  }
+
   console.log('Migrations complete');
 }

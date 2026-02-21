@@ -183,16 +183,16 @@ export async function getGateways(): Promise<GatewayStats[]> {
 
   if (sqliteRows.length === 0) return [];
 
-  // Fetch packet stats from ClickHouse
+  // Fetch packet stats from ClickHouse (using hourly MV for efficiency)
   const result = await client.query({
     query: `
       SELECT
         gateway_id,
-        count() as packet_count,
-        uniqExact(dev_addr) as unique_devices,
-        sum(airtime_us) / 1000 as total_airtime_ms
-      FROM packets
-      WHERE timestamp > now() - INTERVAL 24 HOUR
+        countMerge(packet_count) as packet_count,
+        uniqMerge(dev_addr_set) as unique_devices,
+        sumMerge(airtime_us_sum) / 1000 as total_airtime_ms
+      FROM packets_hourly
+      WHERE hour >= toStartOfHour(now() - INTERVAL 24 HOUR)
       GROUP BY gateway_id
     `,
     format: 'JSONEachRow',
@@ -548,7 +548,70 @@ export async function getTimeSeries(options: {
     deviceFilter,
   } = options;
 
-  // Map interval string to ClickHouse function
+  const groupByExpr = groupBy === 'gateway'
+    ? 'gateway_id'
+    : groupBy === 'operator'
+      ? 'operator'
+      : null;
+
+  const gatewayFilter = gatewayId
+    ? `AND gateway_id = {gatewayId:String}`
+    : '';
+
+  const fromStr = from.toISOString().replace('T', ' ').replace('Z', '');
+  const toStr = to.toISOString().replace('T', ' ').replace('Z', '');
+
+  // Use hourly MV for 1h and 1d intervals when no device filter is applied
+  if ((interval === '1h' || interval === '1d') && !deviceFilter) {
+    const metricExpr = metric === 'airtime'
+      ? 'sumMerge(airtime_us_sum) / 1000000'
+      : 'countMerge(packet_count)';
+
+    // When grouping by operator, filter to data uplinks only
+    const operatorFilter = groupByExpr === 'operator' ? "AND packet_type = 'data'" : '';
+    const truncFunc = interval === '1d' ? 'toStartOfDay' : 'toStartOfHour';
+
+    const query = groupByExpr
+      ? `
+        SELECT
+          ${truncFunc}(hour) as ts,
+          ${groupByExpr} as group_name,
+          ${metricExpr} as value
+        FROM packets_hourly
+        WHERE hour >= toStartOfHour(parseDateTimeBestEffort({from:String}))
+          AND hour <= toStartOfHour(parseDateTimeBestEffort({to:String}))
+          ${gatewayFilter}
+          ${operatorFilter}
+        GROUP BY ts, group_name
+        ORDER BY ts, group_name
+      `
+      : `
+        SELECT
+          ${truncFunc}(hour) as ts,
+          ${metricExpr} as value
+        FROM packets_hourly
+        WHERE hour >= toStartOfHour(parseDateTimeBestEffort({from:String}))
+          AND hour <= toStartOfHour(parseDateTimeBestEffort({to:String}))
+          ${gatewayFilter}
+        GROUP BY ts
+        ORDER BY ts
+      `;
+
+    const result = await client.query({
+      query,
+      query_params: { from: fromStr, to: toStr, gatewayId: gatewayId ?? '' },
+      format: 'JSONEachRow',
+    });
+
+    const rows = await result.json<{ ts: string; value: number; group_name?: string }>();
+    return rows.map(row => ({
+      timestamp: new Date(row.ts),
+      value: row.value,
+      group: row.group_name,
+    }));
+  }
+
+  // For 5m/15m intervals (or when device filter is applied), query raw packets
   const intervalMap: Record<string, string> = {
     '5m': 'toStartOfFiveMinutes',
     '15m': 'toStartOfFifteenMinutes',
@@ -561,20 +624,7 @@ export async function getTimeSeries(options: {
     ? 'sum(airtime_us) / 1000000'  // Convert to seconds
     : 'count()';
 
-  const groupByExpr = groupBy === 'gateway'
-    ? 'gateway_id'
-    : groupBy === 'operator'
-      ? 'operator'
-      : null;
-
-  const gatewayFilter = gatewayId
-    ? `AND gateway_id = {gatewayId:String}`
-    : '';
-
   const deviceFilterSql = buildDeviceFilterSql(deviceFilter);
-
-  const fromStr = from.toISOString().replace('T', ' ').replace('Z', '');
-  const toStr = to.toISOString().replace('T', ' ').replace('Z', '');
 
   // When grouping by operator, filter to data uplinks only to avoid
   // mixing manufacturer names (from join requests) with network operators
@@ -1017,6 +1067,34 @@ export async function getChannelDistribution(
 ): Promise<ChannelStats[]> {
   const client = getClickHouse();
 
+  // Use hourly MV when no device filter is applied
+  if (!deviceFilter && hours >= 1) {
+    const result = await client.query({
+      query: `
+        SELECT
+          frequency,
+          packet_count,
+          channel_airtime as airtime_us,
+          if(total_airtime > 0, channel_airtime / total_airtime * 100, 0) as usage_percent
+        FROM (
+          SELECT
+            frequency,
+            countMerge(packet_count) as packet_count,
+            sumMerge(airtime_us_sum) as channel_airtime,
+            sum(sumMerge(airtime_us_sum)) OVER () as total_airtime
+          FROM packets_channel_sf_hourly
+          WHERE gateway_id = {gatewayId:String}
+            AND hour >= toStartOfHour(now() - INTERVAL {hours:UInt32} HOUR)
+          GROUP BY frequency
+        )
+        ORDER BY frequency
+      `,
+      query_params: { gatewayId, hours },
+      format: 'JSONEachRow',
+    });
+    return result.json<ChannelStats>();
+  }
+
   const deviceFilterSql = buildDeviceFilterSql(deviceFilter);
 
   const result = await client.query({
@@ -1053,6 +1131,35 @@ export async function getSFDistribution(
   deviceFilter?: DeviceFilter
 ): Promise<SFStats[]> {
   const client = getClickHouse();
+
+  // Use hourly MV when no device filter is applied
+  if (!deviceFilter && hours >= 1) {
+    const result = await client.query({
+      query: `
+        SELECT
+          nullIf(spreading_factor, 0) as spreading_factor,
+          packet_count,
+          sf_airtime as airtime_us,
+          if(total_airtime > 0, sf_airtime / total_airtime * 100, 0) as usage_percent
+        FROM (
+          SELECT
+            spreading_factor,
+            countMerge(packet_count) as packet_count,
+            sumMerge(airtime_us_sum) as sf_airtime,
+            sum(sumMerge(airtime_us_sum)) OVER () as total_airtime
+          FROM packets_channel_sf_hourly
+          WHERE gateway_id = {gatewayId:String}
+            AND spreading_factor != 0
+            AND hour >= toStartOfHour(now() - INTERVAL {hours:UInt32} HOUR)
+          GROUP BY spreading_factor
+        )
+        ORDER BY spreading_factor
+      `,
+      query_params: { gatewayId, hours },
+      format: 'JSONEachRow',
+    });
+    return result.json<SFStats>();
+  }
 
   const deviceFilterSql = buildDeviceFilterSql(deviceFilter);
 
@@ -1163,6 +1270,26 @@ export async function getSummaryStats(
 ): Promise<{ total_packets: number; unique_devices: number; total_airtime_ms: number }> {
   const client = getClickHouse();
 
+  // Use hourly MV when no device filter is applied and hours is a round number of hours
+  if (!deviceFilter && hours >= 1) {
+    const gatewayFilter = gatewayId ? 'AND gateway_id = {gatewayId:String}' : '';
+    const result = await client.query({
+      query: `
+        SELECT
+          countMerge(packet_count) as total_packets,
+          uniqMerge(dev_addr_set) as unique_devices,
+          sumMerge(airtime_us_sum) / 1000 as total_airtime_ms
+        FROM packets_hourly
+        WHERE hour >= toStartOfHour(now() - INTERVAL {hours:UInt32} HOUR)
+          ${gatewayFilter}
+      `,
+      query_params: { hours, gatewayId },
+      format: 'JSONEachRow',
+    });
+    const rows = await result.json<{ total_packets: number; unique_devices: number; total_airtime_ms: number }>();
+    return rows[0] || { total_packets: 0, unique_devices: 0, total_airtime_ms: 0 };
+  }
+
   const gatewayFilter = gatewayId ? 'AND gateway_id = {gatewayId:String}' : '';
   const deviceFilterSql = buildDeviceFilterSql(deviceFilter);
 
@@ -1191,6 +1318,29 @@ export async function getOperatorStats(
   deviceFilter?: DeviceFilter
 ): Promise<OperatorStats[]> {
   const client = getClickHouse();
+
+  // Use hourly MV when no device filter is applied
+  if (!deviceFilter && hours >= 1) {
+    const gatewayFilter = gatewayId ? 'AND gateway_id = {gatewayId:String}' : '';
+    const result = await client.query({
+      query: `
+        SELECT
+          operator,
+          countMerge(packet_count) as packet_count,
+          uniqMerge(dev_addr_set) as unique_devices,
+          sumMerge(airtime_us_sum) / 1000 as total_airtime_ms
+        FROM packets_hourly
+        WHERE hour >= toStartOfHour(now() - INTERVAL {hours:UInt32} HOUR)
+          AND packet_type = 'data'
+          ${gatewayFilter}
+        GROUP BY operator
+        ORDER BY packet_count DESC
+      `,
+      query_params: { hours, gatewayId },
+      format: 'JSONEachRow',
+    });
+    return result.json<OperatorStats>();
+  }
 
   const gatewayFilter = gatewayId ? 'AND gateway_id = {gatewayId:String}' : '';
   const deviceFilterSql = buildDeviceFilterSql(deviceFilter);
