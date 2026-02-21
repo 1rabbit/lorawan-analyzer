@@ -45,33 +45,98 @@ function buildDeviceFilterSql(filter?: DeviceFilter): string {
   return conditions.length > 0 ? 'AND ' + conditions.join(' AND ') : '';
 }
 
-export async function insertPacket(packet: ParsedPacket): Promise<void> {
-  const client = getClickHouse();
+// Batch insert buffer — flushes every FLUSH_INTERVAL_MS or when BATCH_SIZE packets accumulate
+const BATCH_SIZE = 1000;
+const FLUSH_INTERVAL_MS = 2000;
 
-  await client.insert({
-    table: 'packets',
-    values: [{
-      timestamp: packet.timestamp.toISOString().replace('T', ' ').replace('Z', ''),
-      gateway_id: packet.gateway_id,
-      packet_type: packet.packet_type,
-      dev_addr: packet.dev_addr,
-      join_eui: packet.join_eui,
-      dev_eui: packet.dev_eui,
-      operator: packet.operator,
-      frequency: packet.frequency,
-      spreading_factor: packet.spreading_factor,
-      bandwidth: packet.bandwidth,
-      rssi: packet.rssi,
-      snr: packet.snr,
-      payload_size: packet.payload_size,
-      airtime_us: packet.airtime_us,
-      f_cnt: packet.f_cnt,
-      f_port: packet.f_port,
-      confirmed: packet.confirmed,
-      session_id: packet.session_id ?? null,
-    }],
-    format: 'JSONEachRow',
+type PacketRow = {
+  timestamp: string;
+  gateway_id: string;
+  packet_type: string;
+  dev_addr: string | null;
+  join_eui: string | null;
+  dev_eui: string | null;
+  operator: string;
+  frequency: number;
+  spreading_factor: number | null;
+  bandwidth: number;
+  rssi: number;
+  snr: number;
+  payload_size: number;
+  airtime_us: number;
+  f_cnt: number | null;
+  f_port: number | null;
+  confirmed: boolean | null;
+  session_id: string | null;
+};
+
+let packetBuffer: PacketRow[] = [];
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+async function flushPacketBuffer(): Promise<void> {
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+  if (packetBuffer.length === 0) return;
+
+  const batch = packetBuffer;
+  packetBuffer = [];
+
+  const client = getClickHouse();
+  try {
+    await client.insert({
+      table: 'packets',
+      values: batch,
+      format: 'JSONEachRow',
+    });
+  } catch (err) {
+    console.error(`Failed to flush ${batch.length} packets to ClickHouse:`, err);
+    // Re-queue failed packets at the front
+    packetBuffer = [...batch, ...packetBuffer];
+  }
+}
+
+function scheduleFlush(): void {
+  if (!flushTimer) {
+    flushTimer = setTimeout(() => {
+      flushTimer = null;
+      flushPacketBuffer().catch(err => console.error('Packet buffer flush error:', err));
+    }, FLUSH_INTERVAL_MS);
+  }
+}
+
+export async function flushPackets(): Promise<void> {
+  await flushPacketBuffer();
+}
+
+export async function insertPacket(packet: ParsedPacket): Promise<void> {
+  packetBuffer.push({
+    timestamp: packet.timestamp.toISOString().replace('T', ' ').replace('Z', ''),
+    gateway_id: packet.gateway_id,
+    packet_type: packet.packet_type,
+    dev_addr: packet.dev_addr,
+    join_eui: packet.join_eui,
+    dev_eui: packet.dev_eui,
+    operator: packet.operator,
+    frequency: packet.frequency,
+    spreading_factor: packet.spreading_factor,
+    bandwidth: packet.bandwidth,
+    rssi: packet.rssi,
+    snr: packet.snr,
+    payload_size: packet.payload_size,
+    airtime_us: packet.airtime_us,
+    f_cnt: packet.f_cnt,
+    f_port: packet.f_port,
+    confirmed: packet.confirmed,
+    session_id: packet.session_id ?? null,
   });
+
+  if (packetBuffer.length >= BATCH_SIZE) {
+    await flushPacketBuffer();
+  } else {
+    scheduleFlush();
+  }
 }
 
 export function upsertGateway(

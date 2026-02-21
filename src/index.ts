@@ -4,7 +4,7 @@ import { loadConfig } from './config.js';
 import { initClickHouse, closeClickHouse } from './db/index.js';
 import { initSQLite, closeSQLite } from './db/sqlite.js';
 import { runMigrations } from './db/migrations.js';
-import { insertPacket, upsertGateway, getCustomOperators } from './db/queries.js';
+import { insertPacket, flushPackets, upsertGateway, getCustomOperators } from './db/queries.js';
 import { connectMqtt, onPacket, onGatewayLocation, disconnectMqtt } from './mqtt/consumer.js';
 import { initOperatorPrefixes } from './operators/prefixes.js';
 import { startApi } from './api/index.js';
@@ -165,6 +165,7 @@ async function shutdown(): Promise<void> {
   try {
     sessionTrackerRef?.stopCleanup();
     await disconnectMqtt();
+    await flushPackets();
     await closeClickHouse();
     closeSQLite();
   } catch (err) {
