@@ -56,6 +56,16 @@ export async function runMigrations(): Promise<void> {
     // Column might already exist - ignore
   }
 
+  // Ensure TTL is set on existing tables (CREATE TABLE IF NOT EXISTS skips this for pre-existing tables)
+  try {
+    await client.command({
+      query: `ALTER TABLE packets MODIFY TTL timestamp + INTERVAL 7 DAY`,
+    });
+    console.log('  Applied 7-day TTL to packets table');
+  } catch {
+    // Ignore if already set to the same value
+  }
+
   // Note: gateways, custom_operators, and hide_rules tables are now in SQLite
 
   console.log('Migrations complete');
