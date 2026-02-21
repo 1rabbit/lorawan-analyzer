@@ -1069,6 +1069,8 @@ export async function getChannelDistribution(
 ): Promise<ChannelStats[]> {
   const client = getClickHouse();
 
+  const gwFilter = gatewayId !== 'all' ? 'AND gateway_id = {gatewayId:String}' : '';
+
   // Use hourly MV when no device filter is applied
   if (!deviceFilter && hours >= 1) {
     const result = await client.query({
@@ -1085,8 +1087,8 @@ export async function getChannelDistribution(
             sumMerge(airtime_us_sum) as channel_airtime,
             sum(sumMerge(airtime_us_sum)) OVER () as total_airtime
           FROM packets_channel_sf_hourly
-          WHERE gateway_id = {gatewayId:String}
-            AND hour >= toStartOfHour(now() - INTERVAL {hours:UInt32} HOUR)
+          WHERE hour >= toStartOfHour(now() - INTERVAL {hours:UInt32} HOUR)
+            ${gwFilter}
           GROUP BY frequency
         )
         ORDER BY frequency
@@ -1113,8 +1115,8 @@ export async function getChannelDistribution(
           sum(airtime_us) as channel_airtime,
           sum(sum(airtime_us)) OVER () as total_airtime
         FROM packets
-        WHERE gateway_id = {gatewayId:String}
-          AND timestamp > now() - INTERVAL {hours:UInt32} HOUR
+        WHERE timestamp > now() - INTERVAL {hours:UInt32} HOUR
+          ${gwFilter}
           ${deviceFilterSql}
         GROUP BY frequency
       )
@@ -1134,6 +1136,8 @@ export async function getSFDistribution(
 ): Promise<SFStats[]> {
   const client = getClickHouse();
 
+  const gwFilter = gatewayId !== 'all' ? 'AND gateway_id = {gatewayId:String}' : '';
+
   // Use hourly MV when no device filter is applied
   if (!deviceFilter && hours >= 1) {
     const result = await client.query({
@@ -1150,9 +1154,9 @@ export async function getSFDistribution(
             sumMerge(airtime_us_sum) as sf_airtime,
             sum(sumMerge(airtime_us_sum)) OVER () as total_airtime
           FROM packets_channel_sf_hourly
-          WHERE gateway_id = {gatewayId:String}
-            AND spreading_factor != 0
+          WHERE spreading_factor != 0
             AND hour >= toStartOfHour(now() - INTERVAL {hours:UInt32} HOUR)
+            ${gwFilter}
           GROUP BY spreading_factor
         )
         ORDER BY spreading_factor
@@ -1179,9 +1183,9 @@ export async function getSFDistribution(
           sum(airtime_us) as sf_airtime,
           sum(sum(airtime_us)) OVER () as total_airtime
         FROM packets
-        WHERE gateway_id = {gatewayId:String}
-          AND spreading_factor IS NOT NULL
+        WHERE spreading_factor IS NOT NULL
           AND timestamp > now() - INTERVAL {hours:UInt32} HOUR
+          ${gwFilter}
           ${deviceFilterSql}
         GROUP BY spreading_factor
       )

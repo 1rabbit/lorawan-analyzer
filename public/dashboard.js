@@ -532,16 +532,9 @@ async function loadOperatorChart() {
 }
 
 async function loadChannelChart() {
-  if (!selectedGateway) {
-    channelChart.data.labels = [];
-    channelChart.data.datasets = [];
-    channelChart.update('none');
-    return;
-  }
-
   const filterParams = getFilterParams();
   const params = new URLSearchParams({ hours: selectedHours, ...filterParams });
-  const data = await api(`/api/spectrum/${selectedGateway}/channels?${params}`);
+  const data = await api(`/api/spectrum/${selectedGateway || 'all'}/channels?${params}`);
   const channels = data.channels || [];
 
   channelChart.data.labels = channels.map(c => (c.frequency / 1000000).toFixed(1));
@@ -557,16 +550,9 @@ async function loadChannelChart() {
 }
 
 async function loadSFChart() {
-  if (!selectedGateway) {
-    sfChart.data.labels = [];
-    sfChart.data.datasets = [];
-    sfChart.update('none');
-    return;
-  }
-
   const filterParams = getFilterParams();
   const params = new URLSearchParams({ hours: selectedHours, ...filterParams });
-  const data = await api(`/api/spectrum/${selectedGateway}/spreading-factors?${params}`);
+  const data = await api(`/api/spectrum/${selectedGateway || 'all'}/spreading-factors?${params}`);
   const sfs = data.spreadingFactors || [];
 
   sfChart.data.labels = sfs.map(s => `SF${s.spreading_factor}`);
