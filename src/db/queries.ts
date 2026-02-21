@@ -733,6 +733,8 @@ export async function getGatewayOperatorsWithDeviceCounts(
 ): Promise<TreeOperator[]> {
   const client = getClickHouse();
 
+  const gatewayFilter = gatewayId !== 'all' ? 'AND gateway_id = {gatewayId:String}' : '';
+
   const result = await client.query({
     query: `
       SELECT
@@ -741,9 +743,9 @@ export async function getGatewayOperatorsWithDeviceCounts(
         count() as packet_count,
         sum(airtime_us) / 1000 as airtime_ms
       FROM packets
-      WHERE gateway_id = {gatewayId:String}
-        AND timestamp > now() - INTERVAL {hours:UInt32} HOUR
+      WHERE timestamp > now() - INTERVAL {hours:UInt32} HOUR
         AND packet_type = 'data'
+        ${gatewayFilter}
       GROUP BY operator
       ORDER BY packet_count DESC
     `,
